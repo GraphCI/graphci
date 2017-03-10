@@ -1,0 +1,36 @@
+after: human-click
+assume-role:
+  img: pebbletech/docker-aws-cli
+  run: aws sts assume-role --role-arn arn:aws:etc:etc --role-session-name deploy
+access-key-id:
+  after: assume-role
+  img: pebbletech/docker-aws-cli
+  run: cat {assume-role} | jq -r .Credentials.AccessKeyId
+secret-access-key:
+  after: assume-role
+  img: pebbletech/docker-aws-cli
+  run: cat {assume-role} | jq -r .Credentials.SecretAccessKey
+session-token:
+  after: assume-role
+  img: pebbletech/docker-aws-cli
+  run: cat {assume-role} | jq -r .Credentials.SessionToken
+one-time-credentials:
+  after:
+    - access-key-id
+    - secret-access-key
+    - session-token
+get-code:
+  img: bravissimolabs/alpine-git
+  run: git clone -b master --single-branch git@github.com:ensemblejs/ensemblejs.git
+create-stack:
+  after:
+    - one-time-credentials
+    - get-code
+  img: pebbletech/docker-aws-cli
+  vol: get-code
+  env:
+    - access-key-id
+    - secret-access-key
+    - session-token
+  run: aws cloudformation create-stack --stack-name infra --template-body file://infrastructure.yaml
+  done: aws cloudformation wait stack-create-complete --stack-name infra
