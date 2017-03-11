@@ -2,7 +2,27 @@
 
 Reinventing CI using docker.
 
-How it works:
+# To do
+[ ] Automap ~/ to process.env.HOME
+[x] Implicit dag creation (env)
+[x] Implicit dag creation (vol)
+[ ] Implicit dag creation (run)
+[ ] Implicit dag creation (img)
+[x] Env var output of stage
+[x] File output of stage
+[ ] Volume output of stage
+[ ] Passing in external env-vars
+[ ] Zip up out and move to s3 bucket for run
+[x] Prepopulate stages with all keys to simplify logic
+
+How it could work:
+
+# Self-Serverless
+1. Set your AWS Credentials
+2. Run script that will create a stack that runs dockercise and links your config repo
+3. Start pushing commits
+
+Or,
 
 # Public Repos
 - Log in with you github account
@@ -33,26 +53,36 @@ We update the store with the json we receive and render the results.
 after: human-click
 assume-role:
   img: pebbletech/docker-aws-cli
-  run: aws sts assume-role --role-arn arn:aws:etc:etc --role-session-name deploy
-access-key-id:
+  run: aws sts assume-role --role-arn arn:aws:iam::327070154264:role/AssumeThis --role-session-name deploy
+aws_access_key_id:
+  after: assume-role
   img: pebbletech/docker-aws-cli
-  run: cat {assume-role} | jq -r .Credentials.AccessKeyId
-secret-access-key:
+  run: cat out/assume-role | jq -r .Credentials.AccessKeyId
+aws_secret_access_key:
+  after: assume-role
   img: pebbletech/docker-aws-cli
-  run: cat {assume-role} | jq -r .Credentials.SecretAccessKey
-session-token:
+  run: cat out/assume-role | jq -r .Credentials.SecretAccessKey
+aws_session_token:
+  after: assume-role
   img: pebbletech/docker-aws-cli
-  run: cat {assume-role} | jq -r .Credentials.SessionToken
+  run: cat out/assume-role | jq -r .Credentials.SessionToken
 get-code:
   img: bravissimolabs/alpine-git
-  run: git clone -b master --single-branch git@github.com:ensemblejs/ensemblejs.git
+  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git
 create-stack:
   img: pebbletech/docker-aws-cli
-  vol: get-code
   env:
-    - access-key-id
-    - secret-access-key
-    - session-token
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+  vol: get-code
   run: aws cloudformation create-stack --stack-name infra --template-body file://infrastructure.yaml
-  done: aws cloudformation wait stack-create-complete --stack-name infra
+wait-for-success:
+  after: create-stack
+  img: pebbletech/docker-aws-cli
+  env:
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+  run: aws cloudformation wait stack-create-complete --stack-name infra
 ```
