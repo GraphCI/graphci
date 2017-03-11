@@ -2,6 +2,49 @@
 
 Reinventing CI using docker.
 
+Take a look at the yaml file below. Define each of your stages, **dockercise** will build a DAG of each of your stages and run them in order. In the example the `assume-role` stage runs and collects one-time AWS credentials. The next three stages are dependent on `assume-role` and cat the output, plucking out particular values. Later the `create-stack` value will take the outputs of the `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token` stages, put them into environment variables passed into the docker stage. The `create-stack` stage also relies on the `get-code` output as a volume.
+
+# CI Definition
+
+```yaml
+assume-role:
+  img: pebbletech/docker-aws-cli
+  run: aws sts assume-role --role-arn arn:aws:iam::327070154264:role/AssumeThis --role-session-name deploy
+aws_access_key_id:
+  after: assume-role
+  img: pebbletech/docker-aws-cli
+  run: cat out/assume-role | jq -r .Credentials.AccessKeyId
+aws_secret_access_key:
+  after: assume-role
+  img: pebbletech/docker-aws-cli
+  run: cat out/assume-role | jq -r .Credentials.SecretAccessKey
+aws_session_token:
+  after: assume-role
+  img: pebbletech/docker-aws-cli
+  run: cat out/assume-role | jq -r .Credentials.SessionToken
+get-code:
+  img: bravissimolabs/alpine-git
+  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git get-code
+create-stack:
+  img: pebbletech/docker-aws-cli
+  env:
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+    - AWS_DEFAULT_REGION
+  vol: get-code
+  run: aws cloudformation create-stack --stack-name infra --template-body file://get-code/example.yaml
+wait-for-success:
+  after: create-stack
+  img: pebbletech/docker-aws-cli
+  env:
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+    - AWS_DEFAULT_REGION
+  run: aws cloudformation wait stack-create-complete --stack-name infra
+```
+
 # To do
 - [x] Implicit dag creation (env)
 - [x] Implicit dag creation (vol)
@@ -50,43 +93,4 @@ This 404's and redirects to our S3 bucket where we return an index.html that is 
 We update the store with the json we receive and render the results.
 
 
-# CI Definition
 
-```yaml
-assume-role:
-  img: pebbletech/docker-aws-cli
-  run: aws sts assume-role --role-arn arn:aws:iam::327070154264:role/AssumeThis --role-session-name deploy
-aws_access_key_id:
-  after: assume-role
-  img: pebbletech/docker-aws-cli
-  run: cat out/assume-role | jq -r .Credentials.AccessKeyId
-aws_secret_access_key:
-  after: assume-role
-  img: pebbletech/docker-aws-cli
-  run: cat out/assume-role | jq -r .Credentials.SecretAccessKey
-aws_session_token:
-  after: assume-role
-  img: pebbletech/docker-aws-cli
-  run: cat out/assume-role | jq -r .Credentials.SessionToken
-get-code:
-  img: bravissimolabs/alpine-git
-  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git get-code
-create-stack:
-  img: pebbletech/docker-aws-cli
-  env:
-    - aws_access_key_id
-    - aws_secret_access_key
-    - aws_session_token
-    - AWS_DEFAULT_REGION
-  vol: get-code
-  run: aws cloudformation create-stack --stack-name infra --template-body file://get-code/example.yaml
-wait-for-success:
-  after: create-stack
-  img: pebbletech/docker-aws-cli
-  env:
-    - aws_access_key_id
-    - aws_secret_access_key
-    - aws_session_token
-    - AWS_DEFAULT_REGION
-  run: aws cloudformation wait stack-create-complete --stack-name infra
-```
