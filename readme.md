@@ -3,17 +3,20 @@
 Reinventing CI using docker.
 
 # To do
-[ ] Automap ~/ to process.env.HOME
-[x] Implicit dag creation (env)
-[x] Implicit dag creation (vol)
-[ ] Implicit dag creation (run)
-[ ] Implicit dag creation (img)
-[x] Env var output of stage
-[x] File output of stage
-[ ] Volume output of stage
-[ ] Passing in external env-vars
-[ ] Zip up out and move to s3 bucket for run
-[x] Prepopulate stages with all keys to simplify logic
+- [x] Implicit dag creation (env)
+- [x] Implicit dag creation (vol)
+- [ ] Implicit dag creation (run)
+- [ ] Implicit dag creation (img)
+- [x] Env var output of stage
+- [x] File output of stage
+- [x] Volume output of stage
+- [x] Externals vols
+- [x] Passing in external env-vars
+- [ ] Zip up out and move to s3 bucket for run
+- [x] Prepopulate stages with all keys to simplify logic
+- [x] Collect all files before making DAG
+- [ ] Handle errors from docker containers as promise rejections
+- [ ] Handle nothing to do when there is no config
 
 How it could work:
 
@@ -50,7 +53,6 @@ We update the store with the json we receive and render the results.
 # CI Definition
 
 ```yaml
-after: human-click
 assume-role:
   img: pebbletech/docker-aws-cli
   run: aws sts assume-role --role-arn arn:aws:iam::327070154264:role/AssumeThis --role-session-name deploy
@@ -68,15 +70,16 @@ aws_session_token:
   run: cat out/assume-role | jq -r .Credentials.SessionToken
 get-code:
   img: bravissimolabs/alpine-git
-  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git
+  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git get-code
 create-stack:
   img: pebbletech/docker-aws-cli
   env:
     - aws_access_key_id
     - aws_secret_access_key
     - aws_session_token
+    - AWS_DEFAULT_REGION
   vol: get-code
-  run: aws cloudformation create-stack --stack-name infra --template-body file://infrastructure.yaml
+  run: aws cloudformation create-stack --stack-name infra --template-body file://get-code/example.yaml
 wait-for-success:
   after: create-stack
   img: pebbletech/docker-aws-cli
@@ -84,5 +87,6 @@ wait-for-success:
     - aws_access_key_id
     - aws_secret_access_key
     - aws_session_token
+    - AWS_DEFAULT_REGION
   run: aws cloudformation wait stack-create-complete --stack-name infra
 ```

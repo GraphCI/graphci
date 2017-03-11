@@ -19,6 +19,10 @@ const runDag = ({ stages, edges }) => {
     const stage = stages[name];
 
     if (!stage || !stage.img) {
+      if (process.env[name.toUpperCase()]) {
+        console.log(`${name.toUpperCase()}=${process.env[name.toUpperCase()]}`);
+      }
+
       return next();
     }
 
@@ -26,29 +30,45 @@ const runDag = ({ stages, edges }) => {
     runStream.pipe(fs.createWriteStream(`${runId}/${name}`));
     runStream.pipe(process.stdout);
 
-    const env = (stage.env).map((stageName) => readFile(`${runId}/${stageName}`, 'utf8')
-        .then((value) => `${stageName.toUpperCase()}=${value.trim()}`));
+    const Binds = [
+      `${process.cwd()}/${runId}:/out`,
+      `${process.env.HOME}/.aws:/root/.aws`,
+    ];
+
+    [].concat(stage.vol).concat(stage.outVol).forEach((volName) => {
+      if (stages[volName]) {
+        Binds.push(`${process.cwd()}/${runId}/.vol/${volName}:/${volName}`);
+      } else {
+        Binds.push(volName);
+      }
+    });
+
+    const env = (stage.env)
+        .map((stageName) => {
+          if (!stages[stageName]) {
+            return `${stageName.toUpperCase()}=${process.env[stageName.toUpperCase()]}`;
+          }
+
+          return readFile(`${runId}/${stageName}`, 'utf8')
+            .then((value) => `${stageName.toUpperCase()}=${value.trim()}`);
+        });
 
     return Promise.all(env)
       .then((Env) => docker.pull(stage.img)
           .then(() => {
             const cmd = ['/bin/sh', '-c', `${stage.run}`];
-            const config = {
-              Env,
-              Binds: [
-                `${process.cwd()}:/src`,
-                `${process.cwd()}/${runId}:/out`,
-                `${process.env.HOME}/.aws:/root/.aws`,
-              ],
-            };
 
-            return docker.run(stage.img, cmd, runStream, config);
+            return docker.run(stage.img, cmd, runStream, { Env, Binds });
           })
           .then(() => next())
-          .catch(next));
+          .catch((err) => {
+            console.error(err);
+            process.exit(1);
+          }));
   };
 
   return mkdir(`./${runId}`)
+    .then(() => mkdir(`./${runId}/.vols`))
     .then(() => new Promise((resolve, reject) => {
       const done = (err) => {
         const result = err ? reject : resolve;

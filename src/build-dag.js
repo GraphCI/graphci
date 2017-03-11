@@ -25,12 +25,17 @@ const buildDag = (stages, predecessor) => {
         edges.push([predecessor, name]);
       }
 
-      stage.env = stage.env || [];
-      stage.vol = stage.vol || [];
-      stage.after = stage.after || [];
+      stage.env = (isArray(stage.env) ? stage.env : [stage.env]).filter((x) => x);
+      stage.vol = (isArray(stage.vol) ? stage.vol : [stage.vol]).filter((x) => x);
+      stage.after = (isArray(stage.after) ? stage.after : [stage.after]).filter((x) => x);
+      stage.outVol = (isArray(stage.outVol) ? stage.outVol : [stage.outVol]).filter((x) => x);
 
-      keysThatCountForDeps.forEach((depKey) => {
-        addDependencies(stage[depKey], name).forEach((edge) => edges.push(edge));
+      keysThatCountForDeps.forEach((depName) => {
+        addDependencies(stage[depName], name).forEach((edge) => edges.push(edge));
+      });
+
+      stage.vol.forEach((depName) => {
+        stages[depName].outVol.push(depName);
       });
     });
 
