@@ -60,6 +60,7 @@ wait-for-success:
 - [x] Collect all files before making DAG
 - [ ] Handle errors from docker containers as promise rejections
 - [ ] Handle nothing to do when there is no config
+- [ ] Make sure that envvars with spaces work
 
 How it could work:
 
