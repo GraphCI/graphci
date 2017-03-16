@@ -46,21 +46,63 @@ wait-for-success:
 ```
 
 # To do
-- [x] Implicit dag creation (env)
-- [x] Implicit dag creation (vol)
 - [ ] Implicit dag creation (run)
 - [ ] Implicit dag creation (img)
+- [ ] Zip up out and move to s3 bucket for run
+- [ ] Handle errors from docker containers as promise rejections
+- [ ] Handle nothing to do when there is no config
+- [ ] Make sure that envvars with spaces work
+- [ ] Support for encrypted environment variables
+- [ ] Support packages using Dockerfiles
+- [ ] Add support for clean up stages. If other stage finishes (not just passes) then run my stage
+- [ ] Make stages immutable. They operate in a one-time-path, the results are uploaded to s3. The path is deleted. Next!
+- [ ] Conditional Logic. If stage is true run update, if stage is false, run create.
+- [ ] Dependencies on remote pipelines. When this build goes green _after_ my build has started, then this dependency is fulfulled.
+- [ ] No log out for sensitive output from jobs.
+
+# Done
+- [x] Implicit dag creation (env)
+- [x] Implicit dag creation (vol)
 - [x] Env var output of stage
 - [x] File output of stage
 - [x] Volume output of stage
 - [x] Externals vols
 - [x] Passing in external env-vars
-- [ ] Zip up out and move to s3 bucket for run
 - [x] Prepopulate stages with all keys to simplify logic
 - [x] Collect all files before making DAG
-- [ ] Handle errors from docker containers as promise rejections
-- [ ] Handle nothing to do when there is no config
-- [ ] Make sure that envvars with spaces work
+
+# Triggers
+- [ ] Manual
+- [ ] Git commit
+- [ ] Remote build completes (we need some way of tracking whether or not we have build of this before
+- [ ] Timer. When we do a get on a package and it's version number has changed, then we run a stage that updates that dependency and runs the build.
+
+# Results
+
+dockercise/run/:runId/:stage.json ()
+dockercise/run/:runId/:stage.log (for console out)
+dockercise/run/:runId/:stage.zip (for volumes)
+
+```javascript
+on-stage-start: POST dockercise/run/:runId/:stage.json
+{
+  name: stage.name,
+  started: moment().utc(),
+  finished: null,
+  status: 'in-progress',
+}
+
+on-stage-end: POST dockercise/run/:runId/:stage.json
+{
+  name: prior.name,
+  started: prior.started,
+  finished: moment().utc(),
+  status: 'winning|like-a-chump',
+  logs: dockercise/run/:runId/:stage.log,
+  artefact: dockercise/run/:runId/:stage.zip,
+}
+```
+
 
 How it could work:
 
