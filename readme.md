@@ -4,6 +4,9 @@ Reinventing CI using docker.
 
 Take a look at the yaml file below. Define each of your stages, **dockercise** will build a DAG of each of your stages and run them in order. In the example the `assume-role` stage runs and collects one-time AWS credentials. The next three stages are dependent on `assume-role` and cat the output, plucking out particular values. Later the `create-stack` value will take the outputs of the `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token` stages, put them into environment variables passed into the docker stage. The `create-stack` stage also relies on the `get-code` output as a volume.
 
+# Usage
+`AWS_PROFILE=has-permissions-to-s3 npm start`
+
 # CI Definition
 
 ```yaml
@@ -59,7 +62,6 @@ wait-for-success:
 - [ ] Make stages immutable. They operate in a one-time-path, the results are uploaded to s3. The path is deleted. Next!
 - [ ] Conditional Logic. If stage is true run update, if stage is false, run create.
 - [ ] Dependencies on remote pipelines. When this build goes green _after_ my build has started, then this dependency is fulfulled.
-- [ ] No log out for sensitive output from jobs.
 - [ ] Fix issue where dockercise code ends up in volumes
 - [ ] Make a docker container that comes with dockercise installed already
 
@@ -73,6 +75,9 @@ wait-for-success:
 - [x] Passing in external env-vars
 - [x] Prepopulate stages with all keys to simplify logic
 - [x] Collect all files before making DAG
+- [x] Upload results object to s3 on stage completion
+- [x] Upload logs to S3
+- [x] No log out for sensitive output from jobs.
 
 # Triggers
 - [ ] Manual

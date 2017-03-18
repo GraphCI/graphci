@@ -4,6 +4,9 @@ const moment = require('moment');
 const denodeify = require('denodeify');
 const stream = require('stream');
 const startDocker = require('./docker');
+const uploadResults = require('./s3').uploadResults;
+const uploadRun = require('./s3').uploadRun;
+const uploadLogs = require('./s3').uploadLogs;
 
 const mkdir = denodeify(fs.mkdir);
 const readFile = denodeify(fs.readFile);
@@ -28,11 +31,17 @@ const runDag = ({ stages, edges }) => {
   const getOutputOfStage = (name) => readFile(getStageOutputPath(name), 'utf8');
   const buildVolumeMapping = (name) => `${getAbsoluteRunVolsPath()}/${name}:/${name}`;
 
-  const forkOutputStream = (name) => {
+  uploadRun(runId, stages, edges).catch((error) => console.error(error));
+
+  const forkOutputStream = (name, noLog) => {
     const runStream = stream.PassThrough();
     runStream.pipe(fs.createWriteStream(getStageOutputPath(name)));
-    runStream.pipe(process.stdout);
 
+    if (noLog) {
+      return runStream;
+    }
+
+    runStream.pipe(process.stdout);
     return runStream;
   };
 
@@ -68,8 +77,17 @@ const runDag = ({ stages, edges }) => {
   const onStage = (name, next) => {
     console.info(`Running: ${name}`);
 
+    const started = moment().utc().format();
     const NAME = name.toUpperCase();
     const stage = stages[name];
+
+    const results = () => ({
+      runId,
+      name,
+      started,
+      finished: moment().utc().format(),
+      success: true,
+    });
 
     if (nothingToDo(stage)) {
       if (isStagePluckGlobalEnvVar(NAME)) {
@@ -78,7 +96,8 @@ const runDag = ({ stages, edges }) => {
         console.info(`Stage ${name} has nothing to do.`);
       }
 
-      return next();
+      return uploadResults(runId, name, results())
+        .then(() => next());
     }
 
     return docker.pull(stage.img)
@@ -86,10 +105,18 @@ const runDag = ({ stages, edges }) => {
       .then((Env) => {
         const cmd = ['/bin/sh', '-c', `${stage.run}`];
 
-        return docker.run(stage.img, cmd, forkOutputStream(name), {
+        return docker.run(stage.img, cmd, forkOutputStream(name, stage.noLog), {
           Binds: generateVolumeBindingsForStage(stage),
           Env,
         });
+      })
+      .then(() => uploadResults(runId, name, results()))
+      .then(() => {
+        if (stage.noLog) {
+          return undefined;
+        }
+
+        return uploadLogs(runId, name, getStageOutputPath(name));
       })
       .then(() => next())
       .catch((err) => {

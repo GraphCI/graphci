@@ -9,6 +9,7 @@
   "author": "Ryan Boucher",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.28.0",
     "breeze-dag": "^0.1.0",
     "denodeify": "^1.2.1",
     "dockerode": "^2.3.3",
