@@ -9,6 +9,7 @@
   "bin": {
     "dockercise": "index.js"
   },
+  "repository": "https://github.com/distributedlife/dockercise",
   "author": "Ryan Boucher",
   "license": "ISC",
   "dependencies": {
