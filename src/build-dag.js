@@ -25,6 +25,8 @@ const buildDag = (stages, predecessor) => {
         edges.push([predecessor, name]);
       }
 
+      stage.name = name;
+      stage.NAME = stage.name.toUpperCase();
       stage.env = (isArray(stage.env) ? stage.env : [stage.env]).filter((x) => x);
       stage.vol = (isArray(stage.vol) ? stage.vol : [stage.vol]).filter((x) => x);
       stage.after = (isArray(stage.after) ? stage.after : [stage.after]).filter((x) => x);

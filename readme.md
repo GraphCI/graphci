@@ -48,6 +48,7 @@ wait-for-success:
 # To do
 - [ ] Implicit dag creation (run)
 - [ ] Implicit dag creation (img)
+- [ ] Make this a npm cli that can be installed globally
 - [ ] Zip up out and move to s3 bucket for run
 - [ ] Handle errors from docker containers as promise rejections
 - [ ] Handle nothing to do when there is no config
@@ -59,6 +60,8 @@ wait-for-success:
 - [ ] Conditional Logic. If stage is true run update, if stage is false, run create.
 - [ ] Dependencies on remote pipelines. When this build goes green _after_ my build has started, then this dependency is fulfulled.
 - [ ] No log out for sensitive output from jobs.
+- [ ] Fix issue where dockercise code ends up in volumes
+- [ ] Make a docker container that comes with dockercise installed already
 
 # Done
 - [x] Implicit dag creation (env)

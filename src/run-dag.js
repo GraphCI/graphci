@@ -2,82 +2,115 @@ const fs = require('fs');
 const dag = require('breeze-dag');
 const moment = require('moment');
 const denodeify = require('denodeify');
+const stream = require('stream');
 const startDocker = require('./docker');
 
 const mkdir = denodeify(fs.mkdir);
 const readFile = denodeify(fs.readFile);
 
 const concurrency = 10;
+const SUCCESS = 0;
+const FAILURE = 1;
+
 const docker = startDocker();
+
+const nothingToDo = (stage) => !stage || !stage.img;
+const isStagePluckGlobalEnvVar = (name) => process.env[name];
+const formatEnvVar = (KEY, val) => `${KEY}=${val}`;
 
 const runDag = ({ stages, edges }) => {
   const runId = moment().valueOf();
 
-  const onStage = (name, next) => {
-    console.log(`Running: ${name}`);
+  const getRunPath = () => `./${runId}`;
+  const getRunVolsPath = () => `./${runId}/.vol`;
+  const getAbsoluteRunVolsPath = () => `${process.cwd()}/${runId}/.vol`;
+  const getStageOutputPath = (name) => `${runId}/${name}`;
+  const getOutputOfStage = (name) => readFile(getStageOutputPath(name), 'utf8');
+  const buildVolumeMapping = (name) => `${getAbsoluteRunVolsPath()}/${name}:/${name}`;
 
+  const forkOutputStream = (name) => {
+    const runStream = stream.PassThrough();
+    runStream.pipe(fs.createWriteStream(getStageOutputPath(name)));
+    runStream.pipe(process.stdout);
+
+    return runStream;
+  };
+
+  const generateVolumeBindingsForStage = (stage) => {
+    const volumes = [].concat(stage.vol).concat(stage.outVol);
+    const upstream = volumes.filter((volumeName) => stages[volumeName]);
+    const constantMappings = volumes.filter((volumeName) => !stages[volumeName]);
+
+    return [
+      `${process.cwd()}/${runId}:/out`,
+      `${process.env.HOME}/.aws:/root/.aws`,
+    ]
+    .concat(constantMappings)
+    .concat(upstream.map(buildVolumeMapping));
+  };
+
+  const getEnvironmentVariablesForStage = (stage) => {
+    const upstreamDep = stage.env.filter((priorStageName) => stages[priorStageName]);
+    const constantDep = stage.env.filter((priorStageName) => !stages[priorStageName]);
+
+    const upstreamValues = upstreamDep
+        .map((priorStageName) => getOutputOfStage(priorStageName)
+        .then((output) => output.trim())
+        .then((output) => formatEnvVar(priorStageName.toUpperCase(), output)));
+
+    const constantValues = constantDep
+      .map((priorStageName) => priorStageName.toUpperCase())
+      .map((PRIOR_STAGE_NAME) => formatEnvVar(PRIOR_STAGE_NAME, process.env[PRIOR_STAGE_NAME]));
+
+    return upstreamValues.concat(constantValues);
+  };
+
+  const onStage = (name, next) => {
+    console.info(`Running: ${name}`);
+
+    const NAME = name.toUpperCase();
     const stage = stages[name];
 
-    if (!stage || !stage.img) {
-      if (process.env[name.toUpperCase()]) {
-        console.log(`${name.toUpperCase()}=${process.env[name.toUpperCase()]}`);
+    if (nothingToDo(stage)) {
+      if (isStagePluckGlobalEnvVar(NAME)) {
+        console.info(formatEnvVar(NAME, process.env[NAME]));
+      } else {
+        console.info(`Stage ${name} has nothing to do.`);
       }
 
       return next();
     }
 
-    const runStream = require('stream').PassThrough();
-    runStream.pipe(fs.createWriteStream(`${runId}/${name}`));
-    runStream.pipe(process.stdout);
+    return docker.pull(stage.img)
+      .then(() => Promise.all(getEnvironmentVariablesForStage(stage)))
+      .then((Env) => {
+        const cmd = ['/bin/sh', '-c', `${stage.run}`];
 
-    const Binds = [
-      `${process.cwd()}/${runId}:/out`,
-      `${process.env.HOME}/.aws:/root/.aws`,
-    ];
-
-    [].concat(stage.vol).concat(stage.outVol).forEach((volName) => {
-      if (stages[volName]) {
-        Binds.push(`${process.cwd()}/${runId}/.vol/${volName}:/${volName}`);
-      } else {
-        Binds.push(volName);
-      }
-    });
-
-    const env = (stage.env)
-        .map((stageName) => {
-          if (!stages[stageName]) {
-            return `${stageName.toUpperCase()}=${process.env[stageName.toUpperCase()]}`;
-          }
-
-          return readFile(`${runId}/${stageName}`, 'utf8')
-            .then((value) => `${stageName.toUpperCase()}=${value.trim()}`);
+        return docker.run(stage.img, cmd, forkOutputStream(name), {
+          Binds: generateVolumeBindingsForStage(stage),
+          Env,
         });
-
-    return Promise.all(env)
-      .then((Env) => docker.pull(stage.img)
-          .then(() => {
-            const cmd = ['/bin/sh', '-c', `${stage.run}`];
-
-            return docker.run(stage.img, cmd, runStream, { Env, Binds });
-          })
-          .then(() => next())
-          .catch((err) => {
-            console.error(err);
-            process.exit(1);
-          }));
+      })
+      .then(() => next())
+      .catch((err) => {
+        console.error(err);
+        process.exit(1);
+      });
   };
 
-  return mkdir(`./${runId}`)
-    .then(() => mkdir(`./${runId}/.vols`))
+  return mkdir(getRunPath())
+    .then(() => mkdir(getRunVolsPath()))
     .then(() => new Promise((resolve, reject) => {
-      const done = (err) => {
-        const result = err ? reject : resolve;
-        result(err || undefined);
-      };
+      const done = (err) => (err ? reject : resolve)(err || undefined);
 
       dag(edges, concurrency, onStage, done);
     }))
-    .then(() => console.log(`Run completed: ${runId}`));
+    .then(() => [runId, SUCCESS])
+    .catch((err) => {
+      console.error(err);
+
+      return [runId, FAILURE];
+    });
 };
 
 module.exports = runDag;

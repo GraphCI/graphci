@@ -19,3 +19,4 @@ wait-for-success:
     - aws_session_token
     - AWS_DEFAULT_REGION
   run: aws cloudformation wait stack-create-complete --stack-name infra
+  

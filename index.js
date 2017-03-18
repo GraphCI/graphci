@@ -11,4 +11,7 @@ glob('**/*.dockercise.yaml')
   .then((files) => files.reduce((all, file) => Object.assign({}, all, file)), {})
   .then((stages) => buildDag(stages, 'dockercise'))
   .then(runDag)
-  .catch(process.exit);
+  .then(([runId, result]) => {
+    console.log(`Run completed: ${runId}`);
+    process.exit(result);
+  });
