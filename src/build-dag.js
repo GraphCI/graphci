@@ -1,3 +1,5 @@
+const prune = require('./utils/prune');
+
 const isArray = require('lodash/isArray');
 
 const keysWeCareAbout = ['after', 'img', 'run', 'vol', 'env', 'done'];
@@ -14,7 +16,7 @@ const addDependencies = (dependencies, name) => {
   return [[dependencies, name]];
 };
 
-const buildDag = (stages, predecessor) => {
+const buildDag = (stages, predecessor, target) => {
   const edges = [];
 
   Object.keys(stages)
@@ -41,7 +43,7 @@ const buildDag = (stages, predecessor) => {
       });
     });
 
-  return { stages, edges };
+  return { stages, edges: prune(target, [], edges) };
 };
 
 module.exports = buildDag;

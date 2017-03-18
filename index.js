@@ -7,11 +7,13 @@ const buildDag = require('./src/build-dag');
 const runDag = require('./src/run-dag');
 const glob = denodeify(require('glob'));
 
+const target = process.argv[2];
+
 glob('**/*.dockercise.yaml')
   .then((files) => Promise.all(files.map((filename) => readFile(filename, 'utf8'))))
   .then((files) => files.map(yaml.safeLoad))
   .then((files) => files.reduce((all, file) => Object.assign({}, all, file)), {})
-  .then((stages) => buildDag(stages, 'dockercise'))
+  .then((stages) => buildDag(stages, 'dockercise', target))
   .then(runDag)
   .then(([runId, result]) => {
     console.log(`Run completed: ${runId}`);
