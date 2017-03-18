@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node index.js"
   },
+  "bin": {
+    "dockercise": "index.js"
+  },
   "author": "Ryan Boucher",
   "license": "ISC",
   "dependencies": {
