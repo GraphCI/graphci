@@ -1,6 +1,6 @@
 const prune = (target, necessaryEdges, otherEdges) => {
   if (target) {
-    const necessaryYs = necessaryEdges.map((edge) => edge[0]);
+    const necessaryYs = necessaryEdges.map(([x]) => x);
     const isUseful = ([, y]) => target === y || necessaryYs.includes(y);
     const isUseless = (edge) => !isUseful(edge);
 
