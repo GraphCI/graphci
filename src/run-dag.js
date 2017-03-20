@@ -7,6 +7,7 @@ const startDocker = require('./docker');
 const uploadResults = require('./s3').uploadResults;
 const uploadRun = require('./s3').uploadRun;
 const uploadLogs = require('./s3').uploadLogs;
+const uniq = require('lodash/uniq');
 
 const mkdir = denodeify(fs.mkdir);
 const readFile = denodeify(fs.readFile);
@@ -50,12 +51,14 @@ const runDag = ({ stages, edges }) => {
     const upstream = volumes.filter((volumeName) => stages[volumeName]);
     const constantMappings = volumes.filter((volumeName) => !stages[volumeName]);
 
-    return [
+    const allBindings = [
       `${process.cwd()}/${runId}:/out`,
       `${process.env.HOME}/.aws:/root/.aws`,
     ]
     .concat(constantMappings)
     .concat(upstream.map(buildVolumeMapping));
+
+    return uniq(allBindings);
   };
 
   const getEnvironmentVariablesForStage = (stage) => {
@@ -104,9 +107,10 @@ const runDag = ({ stages, edges }) => {
       .then(() => Promise.all(getEnvironmentVariablesForStage(stage)))
       .then((Env) => {
         const cmd = ['/bin/sh', '-c', `${stage.run}`];
+        const Binds = generateVolumeBindingsForStage(stage);
 
         return docker.run(stage.img, cmd, forkOutputStream(name, stage.noLog), {
-          Binds: generateVolumeBindingsForStage(stage),
+          Binds,
           Env,
         });
       })
