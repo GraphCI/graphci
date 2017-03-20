@@ -1,7 +1,7 @@
 {
   "name": "dockercise",
   "version": "1.0.0",
-  "description": "",
+  "description": "Fan-in and fan-out CI pipelines using docker",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
