@@ -16,7 +16,7 @@ const addDependencies = (dependencies, name) => {
   return [[dependencies, name]];
 };
 
-const buildDag = (stages, predecessor, target) => {
+const buildDag = (stages, target) => {
   const edges = [];
 
   Object.keys(stages)
@@ -24,7 +24,7 @@ const buildDag = (stages, predecessor, target) => {
     .forEach((name) => {
       const stage = stages[name];
       if (!stage.after && !stage.env && !stage.vol) {
-        edges.push([predecessor, name]);
+        edges.push(['dockercise', name]);
       }
 
       stage.name = name;
