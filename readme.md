@@ -48,24 +48,31 @@ wait-for-success:
   run: aws cloudformation wait stack-create-complete --stack-name infra
 ```
 
+# How do I...?
+## Publish a package to npm and then end of a
+
 # To do
+- [ ] Support syntax like vol: stage-name:~/path/to/mount
+- [ ] Fail the build when environment variables are missing
+- [ ] Fix issue where dockercise code ends up in volumes
+- [ ] Make sure that envvars with spaces work
 - [ ] Implicit dag creation (run)
 - [ ] Implicit dag creation (img)
-- [ ] Make this a npm cli that can be installed globally
 - [ ] Zip up out and move to s3 bucket for run
 - [ ] Handle errors from docker containers as promise rejections
 - [ ] Handle nothing to do when there is no config
-- [ ] Make sure that envvars with spaces work
 - [ ] Support for encrypted environment variables
 - [ ] Support packages using Dockerfiles
 - [ ] Add support for clean up stages. If other stage finishes (not just passes) then run my stage
 - [ ] Make stages immutable. They operate in a one-time-path, the results are uploaded to s3. The path is deleted. Next!
 - [ ] Conditional Logic. If stage is true run update, if stage is false, run create.
 - [ ] Dependencies on remote pipelines. When this build goes green _after_ my build has started, then this dependency is fulfulled.
-- [ ] Fix issue where dockercise code ends up in volumes
 - [ ] Make a docker container that comes with dockercise installed already
+- [ ] Command completion
+
 
 # Done
+- [x] Make this a npm cli that can be installed globally
 - [x] Implicit dag creation (env)
 - [x] Implicit dag creation (vol)
 - [x] Env var output of stage
@@ -80,7 +87,7 @@ wait-for-success:
 - [x] No log out for sensitive output from jobs.
 
 # Triggers
-- [ ] Manual
+- [x] Manual
 - [ ] Git commit
 - [ ] Remote build completes (we need some way of tracking whether or not we have build of this before
 - [ ] Timer. When we do a get on a package and it's version number has changed, then we run a stage that updates that dependency and runs the build.
