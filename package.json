@@ -4,11 +4,18 @@
   "description": "Fan-in and fan-out CI pipelines using docker",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "IS_SET=YES node index.js run_tests"
   },
   "bin": {
     "dockercise": "index.js"
   },
+  "files": [
+    "index.js",
+    "src/",
+    "readme.md",
+    "package.json"
+  ],
   "repository": "https://github.com/distributedlife/dockercise",
   "author": "Ryan Boucher",
   "license": "ISC",

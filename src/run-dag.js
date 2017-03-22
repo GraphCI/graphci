@@ -49,14 +49,27 @@ const runDag = ({ stages, edges }) => {
   const generateVolumeBindingsForStage = (stage) => {
     const volumes = [].concat(stage.vol).concat(stage.outVol);
     const upstream = volumes.filter((volumeName) => stages[volumeName]);
-    const constantMappings = volumes.filter((volumeName) => !stages[volumeName]);
+    const dockerStyleMappings = volumes.filter((volumeName) => !stages[volumeName]);
+
+    const constantMappings = dockerStyleMappings
+      .map((volumeName) => volumeName.split(':'))
+      .filter((p) => !stages[p[0]])
+      .map((p) => p.join(':'));
+
+    const upstreamIndirectBindings = dockerStyleMappings
+        .map((volumeName) => volumeName.split(':'))
+        .filter((p) => stages[p[0]])
+        .map((p) => `${getAbsoluteRunVolsPath()}/${p[0]}:${p[1]}`);
 
     const allBindings = [
       `${process.cwd()}/${runId}:/out`,
       `${process.env.HOME}/.aws:/root/.aws`,
     ]
     .concat(constantMappings)
+    .concat(upstreamIndirectBindings)
     .concat(upstream.map(buildVolumeMapping));
+
+    // console.log(allBindings);
 
     return uniq(allBindings);
   };
@@ -74,7 +87,7 @@ const runDag = ({ stages, edges }) => {
       .map((priorStageName) => priorStageName.toUpperCase())
       .map((PRIOR_STAGE_NAME) => formatEnvVar(PRIOR_STAGE_NAME, process.env[PRIOR_STAGE_NAME]));
 
-    return upstreamValues.concat(constantValues);
+    return upstreamValues.concat(constantValues).concat(formatEnvVar('GRAPH_CI_RUN_ID', runId));
   };
 
   const onStage = (name, next) => {
@@ -84,13 +97,55 @@ const runDag = ({ stages, edges }) => {
     const NAME = name.toUpperCase();
     const stage = stages[name];
 
-    const results = () => ({
+    const results = (success = true) => ({
       runId,
       name,
       started,
       finished: moment().utc().format(),
-      success: true,
+      success,
     });
+
+    const doDockerRun = (Env) => {
+      const cmd = ['/bin/sh', '-c', `${stage.run}`];
+      const Binds = generateVolumeBindingsForStage(stage);
+
+      return docker.run(stage.img, cmd, forkOutputStream(name, stage.noLog), {
+        Binds,
+        Env,
+      });
+    };
+
+    const findOutResultOfDockerRun = (response) => {
+      const container = docker.getContainer(response.id);
+
+      return new Promise((resolve, reject) => {
+        container.inspect((err, data) => {
+          const done = (exitCode) => (exitCode === FAILURE ? reject : resolve)();
+          done(data.State.ExitCode);
+        });
+      });
+    };
+
+    const logStageSummary = () => {
+      console.warn(`Stage "${name}" failed.`);
+      console.warn(`Run failed: ${runId}.`);
+    };
+
+    const exit = () => process.exit(1);
+
+    const uploadLogsForStage = () => {
+      if (stage.noLog || stage.logsUploaded) {
+        return undefined;
+      }
+
+      return uploadLogs(runId, name, getStageOutputPath(name))
+        .then(() => {
+          stage.logsUploaded = true;
+        });
+    };
+
+    const uploadSuccessResults = () => uploadResults(runId, name, results());
+    const uploadFailureResults = () => uploadResults(runId, name, results(false));
 
     if (nothingToDo(stage)) {
       if (isStagePluckGlobalEnvVar(NAME)) {
@@ -105,27 +160,18 @@ const runDag = ({ stages, edges }) => {
 
     return docker.pull(stage.img)
       .then(() => Promise.all(getEnvironmentVariablesForStage(stage)))
-      .then((Env) => {
-        const cmd = ['/bin/sh', '-c', `${stage.run}`];
-        const Binds = generateVolumeBindingsForStage(stage);
-
-        return docker.run(stage.img, cmd, forkOutputStream(name, stage.noLog), {
-          Binds,
-          Env,
-        });
-      })
-      .then(() => uploadResults(runId, name, results()))
-      .then(() => {
-        if (stage.noLog) {
-          return undefined;
-        }
-
-        return uploadLogs(runId, name, getStageOutputPath(name));
-      })
+      .then(doDockerRun)
+      .then(findOutResultOfDockerRun)
+      .then(uploadSuccessResults)
+      .then(uploadLogsForStage)
       .then(() => next())
-      .catch((err) => {
-        console.error(err);
-        process.exit(1);
+      .catch((error) => {
+        console.log('Stage with docker failed: ', error);
+
+        return uploadFailureResults()
+          .then(uploadLogsForStage)
+          .then(logStageSummary)
+          .then(exit);
       });
   };
 
@@ -137,11 +183,7 @@ const runDag = ({ stages, edges }) => {
       dag(edges, concurrency, onStage, done);
     }))
     .then(() => [runId, SUCCESS])
-    .catch((err) => {
-      console.error(err);
-
-      return [runId, FAILURE];
-    });
+    .catch(() => [runId, FAILURE]);
 };
 
 module.exports = runDag;

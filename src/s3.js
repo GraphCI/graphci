@@ -4,10 +4,11 @@ const denodeify = require('denodeify');
 
 const readFile = denodeify(fs.readFile);
 
+const Bucket = 'dockercise';
 const getFilename = (runId, name, ext) => `${[runId, name].join('/')}.${ext}`;
 
 const uploadRun = (runId, stages, edges) => {
-  const bucket = new AWS.S3({ params: { Bucket: 'dockercise' } });
+  const bucket = new AWS.S3({ params: { Bucket } });
 
   const params = {
     Key: getFilename(runId, 'index', 'json'),
@@ -21,7 +22,7 @@ const uploadRun = (runId, stages, edges) => {
 };
 
 const uploadLogs = (runId, name, file) => {
-  const bucket = new AWS.S3({ params: { Bucket: 'dockercise' } });
+  const bucket = new AWS.S3({ params: { Bucket } });
 
   const params = (Body) => ({
     Key: getFilename(runId, name, 'log'),
@@ -32,12 +33,18 @@ const uploadLogs = (runId, name, file) => {
   });
 
   return readFile(file, 'utf8')
-    .then((contents) => bucket.upload(params(contents)).promise());
+    .then((contents) => {
+      if (!contents) {
+        return undefined;
+      }
+
+      return bucket.upload(params(contents)).promise();
+    });
 };
 
 
 const uploadResults = (runId, name, results) => {
-  const bucket = new AWS.S3({ params: { Bucket: 'dockercise' } });
+  const bucket = new AWS.S3({ params: { Bucket } });
 
   const params = {
     Key: getFilename(runId, name, 'json'),

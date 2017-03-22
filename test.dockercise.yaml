@@ -1,0 +1,69 @@
+test_global_env:
+  img: alpine
+  env: IS_SET
+  run: echo $IS_SET | grep "YES"
+create_file_output:
+  img: alpine
+  run: echo "PASSED"
+test_file_output:
+  after: create_file_output
+  img: alpine
+  run: cat out/create_file_output | grep "PASSED"
+use_output_from_prior_stage:
+  img: alpine
+  env: create_file_output
+  run: echo "$CREATE_FILE_OUTPUT" | grep "PASSED"
+get_code:
+  img: bravissimolabs/alpine-git
+  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git get_code
+use_volume_from_prior_stage:
+  img: alpine
+  vol: get_code
+  run: cat get_code/package.json | grep dockercise
+no_log_stage:
+  img: alpine
+  run: echo "SUPER SECRET"
+  noLog: true
+get_s3_results:
+  after: test_global_env
+  img: governmentpaas/curl-ssl
+  run: curl https://s3-ap-southeast-2.amazonaws.com/dockercise/$GRAPH_CI_RUN_ID/test_global_env.json
+get_s3_log:
+  after: test_global_env
+  img: governmentpaas/curl-ssl
+  run: curl https://s3-ap-southeast-2.amazonaws.com/dockercise/$GRAPH_CI_RUN_ID/test_global_env.log
+get_s3_nolog:
+  after: no_log_stage
+  img: governmentpaas/curl-ssl
+  run: curl https://s3-ap-southeast-2.amazonaws.com/dockercise/$GRAPH_CI_RUN_ID/no_log_stage.log
+s3_results_publish_runId:
+  after: get_s3_results
+  img: pebbletech/docker-aws-cli
+  run: cat out/get_s3_results | jq -r .runId | grep $GRAPH_CI_RUN_ID
+s3_results_publish_name:
+  after: get_s3_results
+  img: pebbletech/docker-aws-cli
+  run: cat out/get_s3_results | jq -r .name | grep test_global_env
+s3_results_publish_success:
+  after: get_s3_results
+  img: pebbletech/docker-aws-cli
+  run: cat out/get_s3_results | jq -r .success | grep true
+s3_log_publish:
+  after: get_s3_log
+  img: alpine
+  run: cat out/get_s3_log | grep YES
+s3_noLog_no_publish:
+  after: get_s3_nolog
+  img: alpine
+  run: cat out/get_s3_nolog | grep "NoSuchKey"
+run_tests:
+  after:
+    - test_global_env
+    - test_file_output
+    - use_output_from_prior_stage
+    - use_volume_from_prior_stage
+    - s3_results_publish_runId
+    - s3_results_publish_name
+    - s3_results_publish_success
+    - s3_log_publish
+    - s3_noLog_no_publish
