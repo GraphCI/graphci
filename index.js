@@ -9,7 +9,7 @@ const glob = denodeify(require('glob'));
 
 const target = process.argv[2];
 
-glob('**/*.dockercise.yaml')
+glob('**/*.dockercise.yaml', { ignore: ['**/node_modules/**'] })
   .then((files) => Promise.all(files.map((filename) => readFile(filename, 'utf8'))))
   .then((files) => files.map(yaml.safeLoad))
   .then((files) => files.reduce((all, file) => Object.assign({}, all, file)), {})
