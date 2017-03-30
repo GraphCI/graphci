@@ -7,6 +7,16 @@ const readFile = denodeify(fs.readFile);
 const Bucket = 'dockercise';
 const getFilename = (runId, name, ext) => `${[runId, name].join('/')}.${ext}`;
 
+let warnedAboutAccessDenied = false;
+const warnAboutAccessDenied = (err) => {
+  if (warnedAboutAccessDenied) {
+    return;
+  }
+
+  console.warn('dockercise| A problem occurred trying to upload results:', err.message)
+  warnedAboutAccessDenied = true;
+}
+
 const uploadRun = (runId, stages, edges) => {
   const bucket = new AWS.S3({ params: { Bucket } });
 
@@ -18,7 +28,7 @@ const uploadRun = (runId, stages, edges) => {
     ACL: 'public-read',
   };
 
-  return bucket.upload(params).promise();
+  return bucket.upload(params).promise().catch(warnAboutAccessDenied);
 };
 
 const uploadLogs = (runId, name, file) => {
@@ -38,7 +48,7 @@ const uploadLogs = (runId, name, file) => {
         return undefined;
       }
 
-      return bucket.upload(params(contents)).promise();
+      return bucket.upload(params(contents)).promise().catch(warnAboutAccessDenied);
     });
 };
 
@@ -54,7 +64,7 @@ const uploadResults = (runId, name, results) => {
     ACL: 'public-read',
   };
 
-  return bucket.upload(params).promise();
+  return bucket.upload(params).promise().catch(warnAboutAccessDenied);
 };
 
 module.exports = { uploadRun, uploadResults, uploadLogs };
