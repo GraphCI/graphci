@@ -12,5 +12,5 @@ app.post('/github/build', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`GraphCI is ALIVE (on port ${port}). No disassemble.`);
+  console.info(`GraphCI is ALIVE (on port ${port}). No disassemble.`);
 });
