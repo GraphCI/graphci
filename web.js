@@ -4,13 +4,15 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const app = express();
-const port = process.argv[2] || 80;
+const port = process.argv[2] || 3000;
 
 app.use(bodyParser.json());
 
 app.post('/github/build', (req, res) => {
-  const urlToCheckout = req.body.commits[0].url;
-  console.info(urlToCheckout);
+  const url = req.body.repository.clone_url;
+  const commit = req.body.after;
+  console.info('Repo: ', url);
+  console.info('Commit: ', commit);
   res.sendStatus(200);
 });
 
