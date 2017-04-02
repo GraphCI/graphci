@@ -5,7 +5,8 @@ const port = process.argv[2] || 80;
 
 app.post('/github/build', (req, res) => {
   const urlToCheckout = req.commits[0].url;
-  res.send(urlToCheckout);
+  console.info(urlToCheckout);
+  res.sendStatus(200);
 });
 
 app.listen(port, () => {
