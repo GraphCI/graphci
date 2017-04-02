@@ -8,3 +8,6 @@ Install Docker
 http://docs.aws.amazon.com/AmazonECS/latest/developerguide/docker-basics.html
 
 Inbound rule for instance
+
+Install Dockercise globally
+`npm install -g dockercise`
