@@ -1,10 +1,11 @@
 const express = require('express');
 
 const app = express();
-const port = 3000;
+const port = process.argv[2] || 80;
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+app.post('/github/build', (req, res) => {
+  const urlToCheckout = req.commits[0].url;
+  res.send(urlToCheckout);
 });
 
 app.listen(port, () => {
