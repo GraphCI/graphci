@@ -56,6 +56,7 @@ wait-for-success:
 - [ ] Fail the build when environment variables are missing
 - [ ] Fix issue where dockercise code ends up in volumes
 - [ ] Make sure that envvars with spaces work
+- [ ] Bug: GraphCI should be able to pull images the host does not already have
 - [ ] Implicit dag creation (run)
 - [ ] Implicit dag creation (img)
 - [ ] Zip up out and move to s3 bucket for run
