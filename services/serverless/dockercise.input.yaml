@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Resources:
+  ApiLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/lambdas/api/lambda.handler
+      Runtime: nodejs4.3
+      Timeout: 10
+      Policies: AWSLambdaRole
+      Environment:
+        Variables:
+          REGION: !Ref "AWS::Region"
+      Events:
+        ProxyApiGreedy:
+          Type: Api
+          Properties:
+            Path: /api/{proxy+}
+            Method: ANY

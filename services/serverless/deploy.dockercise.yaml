@@ -1,0 +1,46 @@
+create_deploy_bucket:
+  img: elimydlarz/docker-aws-cli:1.11.56
+  env:
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+  run: aws s3 mb s3://dockercise-lambdas
+code:
+  img: bravissimolabs/alpine-git
+  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git code
+install_all:
+  img: rkostrzewski/node-aws-lambda
+  vol: code
+  run: npm install
+test:
+  after: install_all
+  img: rkostrzewski/node-aws-lambda
+  vol: code
+  run: npm test
+clean:
+  img: node:alpine
+  vol: code
+  run: rm -rf node_modules
+install_for_production:
+  img: rkostrzewski/node-aws-lambda
+  vol: code
+  run: npm install --production
+create_package:
+  img: elimydlarz/docker-aws-cli:1.11.56
+  env:
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+  vol: code
+  run: aws cloudformation package --template-file code/dockercise.input.yaml --s3-bucket dockercise-lambdas
+deploy:
+  img: elimydlarz/docker-aws-cli:1.11.56
+  env:
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+    - aws_default_region
+  vol:
+    - code
+    - create_package
+  run: aws cloudformation deploy --template-file out/create_package --capabilities CAPABILITY_IAM --stack-name dockercise

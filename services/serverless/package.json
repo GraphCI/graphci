@@ -1,0 +1,48 @@
+{
+  "name": "aculink-services",
+  "version": "1.0.0",
+  "description": "AcuLink services",
+  "scripts": {
+    "lint": "eslint *.js src/**/*.js --ignore-pattern **/*.spec.js",
+    "test": "mocha -c -S -R spec --recursive './{,!(node_modules)/**/}*.spec.js' ",
+    "test:watch": "npm run test -- --watch",
+    "deploy": "dockercise deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/origin-digital/services.git"
+  },
+  "author": "AcuLink Team",
+  "private": true,
+  "homepage": "https://bitbucket.org/origin-digital/services",
+  "dependencies": {
+    "aws-sdk": "^2.14.0",
+    "aws-serverless-express": "^2.2.0",
+    "axios": "^0.15.3",
+    "body-parser": "^1.17.1",
+    "change-case": "^3.0.1",
+    "cors": "^2.8.3",
+    "dockercise": "^1.0.2",
+    "dynamodb-marshaler": "^2.0.0",
+    "express": "^4.15.2",
+    "express-jwt": "^5.1.0",
+    "lodash": "^4.17.4",
+    "moment": "^2.17.1",
+    "url-parse": "^1.1.8"
+  },
+  "devDependencies": {
+    "aws-sdk-mock": "^1.6.1",
+    "chai": "^3.5.0",
+    "chai-http": "^3.0.0",
+    "chai-subset": "^1.4.0",
+    "dirty-chai": "^1.2.2",
+    "eslint": "^3.12.1",
+    "eslint-config-airbnb-base": "^11.0.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-mocha": "^4.8.0",
+    "mocha": "^3.2.0",
+    "require-inject": "^1.4.0",
+    "sinon": "^1.17.7",
+    "sinon-chai": "^2.8.0"
+  }
+}
