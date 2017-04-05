@@ -22,7 +22,7 @@ const nothingToDo = (stage) => !stage || !stage.img;
 const isStagePluckGlobalEnvVar = (name) => process.env[name];
 const formatEnvVar = (KEY, val) => `${KEY}=${val}`;
 
-const runDag = ({ stages, edges }) => {
+const runDag = ({ stages, edges }, debug) => {
   const runId = moment().valueOf();
 
   const getRunPath = () => `./${runId}`;
@@ -108,6 +108,13 @@ const runDag = ({ stages, edges }) => {
     const doDockerRun = (Env) => {
       const cmd = ['/bin/sh', '-c', `${stage.run}`];
       const Binds = generateVolumeBindingsForStage(stage);
+
+      if (debug) {
+        console.info('stage', stage);
+        console.info('Binds', Binds);
+        console.info('Env', Env);
+        console.info('cmd', cmd);
+      }
 
       return docker.run(stage.img, cmd, forkOutputStream(name, stage.noLog), {
         Binds,
