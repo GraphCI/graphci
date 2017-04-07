@@ -127,3 +127,13 @@ https://dockercise-AWS-Account-Id.s3-website-ap-southeast-2.amazonaws.com/result
 This 404's and redirects to our S3 bucket where we return an index.html that is our react app. We then use the route to make a request to our backend server that goes and gets the results file from your AWS account (we have permission to read).
 
 We update the store with the json we receive and render the results.
+
+
+# Deployment
+## UI
+```bash
+DEPLOY_STAGING_BUCKET=dockercise-lambdas-deploy \
+AWS_DEFAULT_REGION=ap-southeast-2 \
+ROLE_TO_ASSUME=arn:aws:iam::*:role/AssumeThis \
+npm run deploy
+```
