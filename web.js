@@ -2,17 +2,25 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const shell = require('shelljs');
 
 const app = express();
 const port = process.argv[2] || 3000;
+const triggeringRepositoryDir = 'triggering-repo';
 
 app.use(bodyParser.json());
 
 app.post('/github/build', (req, res) => {
   const url = req.body.repository.clone_url;
   const commit = req.body.after;
-  console.info('Repo: ', url);
-  console.info('Commit: ', commit);
+
+  shell.exec(`rm -rf ${triggeringRepositoryDir}`);
+  shell.exec(`git clone ${url} ${triggeringRepositoryDir}`);
+  shell.exec(`cd ${triggeringRepositoryDir}`);
+  shell.exec(`git checkout ${commit}`);
+  shell.exec('dockercise');
+  shell.exec('cd ..');
+
   res.sendStatus(200);
 });
 
