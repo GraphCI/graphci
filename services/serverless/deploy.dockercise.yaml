@@ -6,7 +6,8 @@ create_deploy_bucket:
     - aws_session_token
     - aws_default_region
     - deploy_staging_bucket
-  run: aws s3 mb s3://$DEPLOY_STAGING_BUCKET || true
+  run: aws s3 mb s3://$DEPLOY_STAGING_BUCKET
+  neverFail: true
 code:
   img: bravissimolabs/alpine-git
   run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git code
