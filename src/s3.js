@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk');
 const fs = require('fs');
 const denodeify = require('denodeify');
+const colors = require('colors/safe');
 
 const readFile = denodeify(fs.readFile);
 
@@ -13,9 +14,9 @@ const warnAboutAccessDenied = (err) => {
     return;
   }
 
-  console.warn('dockercise| A problem occurred trying to upload results:', err.message)
+  console.warn(colors.yellow('dockercise| A problem occurred trying to upload results:', err.message));
   warnedAboutAccessDenied = true;
-}
+};
 
 const uploadRun = (runId, stages, edges) => {
   const bucket = new AWS.S3({ params: { Bucket } });

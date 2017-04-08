@@ -6,6 +6,7 @@ const readFile = denodeify(require('fs').readFile);
 const buildDag = require('./src/build-dag');
 const runDag = require('./src/run-dag');
 const glob = denodeify(require('glob'));
+const colors = require('colors/safe');
 
 const target = process.argv[2];
 const debug = process.argv[3];
@@ -17,6 +18,6 @@ glob('**/*.dockercise.yaml', { ignore: ['**/node_modules/**'] })
   .then((stages) => buildDag(stages, target))
   .then((dag) => runDag(dag, debug))
   .then(([runId, result]) => {
-    console.log(`Run completed: ${runId}`);
+    console.log(colors.green(`Run successful: ${runId}`));
     process.exit(result);
   });

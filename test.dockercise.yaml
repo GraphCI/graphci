@@ -56,6 +56,11 @@ s3_noLog_no_publish:
   after: get_s3_nolog
   img: alpine
   run: cat out/get_s3_nolog | grep "NoSuchKey"
+failed_stages_can_be_made_to_pass:
+  after: get_s3_results
+  img: pebbletech/docker-aws-cli
+  run: cat out/get_s3_results | jq -r .name | grep this_string_is_not_found
+  neverFail: true
 run_tests:
   after:
     - test_global_env
@@ -67,3 +72,4 @@ run_tests:
     - s3_results_publish_success
     - s3_log_publish
     - s3_noLog_no_publish
+    - failed_stages_can_be_made_to_pass

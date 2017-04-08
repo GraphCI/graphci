@@ -8,6 +8,7 @@ const uploadResults = require('./s3').uploadResults;
 const uploadRun = require('./s3').uploadRun;
 const uploadLogs = require('./s3').uploadLogs;
 const uniq = require('lodash/uniq');
+const colors = require('colors/safe');
 
 const mkdir = denodeify(fs.mkdir);
 const readFile = denodeify(fs.readFile);
@@ -69,8 +70,6 @@ const runDag = ({ stages, edges }, debug) => {
     .concat(upstreamIndirectBindings)
     .concat(upstream.map(buildVolumeMapping));
 
-    // console.log(allBindings);
-
     return uniq(allBindings);
   };
 
@@ -127,15 +126,18 @@ const runDag = ({ stages, edges }, debug) => {
 
       return new Promise((resolve, reject) => {
         container.inspect((err, data) => {
-          const done = (exitCode) => (exitCode === FAILURE ? reject : resolve)();
-          done(data.State.ExitCode);
+          if (data.State.ExitCode === FAILURE && !stage.neverFail) {
+            reject(data.State.ExitCode);
+          }
+
+          resolve(data.State.ExitCode);
         });
       });
     };
 
     const logStageSummary = () => {
-      console.warn(`Stage "${name}" failed.`);
-      console.warn(`Run failed: ${runId}.`);
+      console.warn(colors.red(`Stage "${name}" failed.`));
+      console.warn(colors.red(`Run failed: ${runId}.`));
     };
 
     const exit = () => process.exit(1);
@@ -158,7 +160,7 @@ const runDag = ({ stages, edges }, debug) => {
       if (isStagePluckGlobalEnvVar(NAME)) {
         console.info(formatEnvVar(NAME, process.env[NAME]));
       } else {
-        console.info(`Stage ${name} has nothing to do.`);
+        console.warn(colors.yellow(`Stage "${name}" has nothing to do. Is this intentional?`));
       }
 
       return uploadResults(runId, name, results())
@@ -173,7 +175,7 @@ const runDag = ({ stages, edges }, debug) => {
       .then(uploadLogsForStage)
       .then(() => next())
       .catch((error) => {
-        console.log('Stage with docker failed: ', error);
+        console.error(colors.red('Stage with docker failed: ', error));
 
         return uploadFailureResults()
           .then(uploadLogsForStage)
