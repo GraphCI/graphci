@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: "2010-09-09"
+  Description: "EC2 instance for GraphCI"
+  Resources:
+    GraphCiInstance:
+      Type: "AWS::EC2::Instance"
+      Properties:
+        ImageId: ami-1c47407f
+        Tags:
+          -
+            Key: Product
+            Value: GraphCI
+        UserData: String
+        Volumes:
+          - EC2 MountPoint

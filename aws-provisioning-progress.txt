@@ -11,3 +11,5 @@ Inbound rule for instance
 
 Install Dockercise globally
 `npm install -g dockercise`
+
+Git credentials somehow
