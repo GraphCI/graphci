@@ -11,25 +11,15 @@ create_deploy_bucket:
 code:
   img: bravissimolabs/alpine-git
   run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git code
-install_all:
-  img: rkostrzewski/node-aws-lambda
-  vol: code
-  run: npm install
-test:
-  after: install_all
-  img: rkostrzewski/node-aws-lambda
-  vol: code
-  run: npm test
-clean:
-  img: node:alpine
-  vol: code
-  run: rm -rf node_modules
 install_for_production:
   img: rkostrzewski/node-aws-lambda
   vol: code
+  dir: /code/services/serverless
   run: npm install --production
 create_package:
-  after: create_deploy_bucket
+  after:
+    - create_deploy_bucket
+    - install_for_production
   img: elimydlarz/docker-aws-cli:1.11.56
   env:
     - aws_access_key_id
