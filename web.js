@@ -10,7 +10,8 @@ const triggeringRepositoryDir = 'triggering-repo';
 
 app.use(bodyParser.json());
 
-app.post('/github/build', (req, res) => {
+app.post('/github/push', (req, res) => {
+  const target = 'push';
   const url = req.body.repository.clone_url;
   const commit = req.body.after;
 
@@ -18,7 +19,7 @@ app.post('/github/build', (req, res) => {
   shell.exec(`git clone ${url} ${triggeringRepositoryDir}`);
   shell.exec(`cd ${triggeringRepositoryDir}`);
   shell.exec(`git checkout ${commit}`);
-  shell.exec('dockercise');
+  shell.exec(`dockercise ${target}`);
   shell.exec('cd ..');
 
   res.sendStatus(200);
