@@ -86,7 +86,10 @@ const runDag = ({ stages, edges }, debug) => {
       .map((priorStageName) => priorStageName.toUpperCase())
       .map((PRIOR_STAGE_NAME) => formatEnvVar(PRIOR_STAGE_NAME, process.env[PRIOR_STAGE_NAME]));
 
-    return upstreamValues.concat(constantValues).concat(formatEnvVar('GRAPH_CI_RUN_ID', runId));
+    return upstreamValues
+      .concat(constantValues)
+      .concat(formatEnvVar('GRAPH_CI_RUN_ID', runId))
+      .concat(formatEnvVar('OUT', '/out'));
   };
 
   const onStage = (name, next) => {
@@ -107,17 +110,20 @@ const runDag = ({ stages, edges }, debug) => {
     const doDockerRun = (Env) => {
       const cmd = ['/bin/sh', '-c', `${stage.run}`];
       const Binds = generateVolumeBindingsForStage(stage);
+      const WorkingDir = stage.dir;
 
       if (debug) {
         console.info('stage', stage);
         console.info('Binds', Binds);
         console.info('Env', Env);
         console.info('cmd', cmd);
+        console.info('WorkingDir', WorkingDir);
       }
 
       return docker.run(stage.img, cmd, forkOutputStream(name, stage.noLog), {
         Binds,
         Env,
+        WorkingDir,
       });
     };
 

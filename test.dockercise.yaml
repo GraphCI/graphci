@@ -61,6 +61,15 @@ failed_stages_can_be_made_to_pass:
   img: pebbletech/docker-aws-cli
   run: cat out/get_s3_results | jq -r .name | grep this_string_is_not_found
   neverFail: true
+sets_OUT_to_absolute_path_of_volume:
+  img: alpine
+  run: echo $OUT | grep "/out"
+mounts_a_dir:
+  after: get_code
+  img: alpine
+  vol: get_code
+  dir: /get_code/src
+  run: ls | grep run-dag
 run_tests:
   after:
     - test_global_env
@@ -73,3 +82,5 @@ run_tests:
     - s3_log_publish
     - s3_noLog_no_publish
     - failed_stages_can_be_made_to_pass
+    - sets_OUT_to_absolute_path_of_volume
+    - mounts_a_dir
