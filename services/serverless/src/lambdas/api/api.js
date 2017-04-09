@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
-const getRuns = require('./src/get-runs');
+const getRuns = require('./get-runs');
 
 const app = express();
 

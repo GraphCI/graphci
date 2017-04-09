@@ -37,7 +37,8 @@ create_package:
     - aws_session_token
     - deploy_staging_bucket
   vol: code
-  run: aws cloudformation package --template-file code/services/serverless/dockercise.input.yaml --s3-bucket $DEPLOY_STAGING_BUCKET --output-template-file create_package/dockercise.output.yaml
+  dir: /code/services/serverless
+  run: aws cloudformation package --template-file dockercise.input.yaml --s3-bucket $DEPLOY_STAGING_BUCKET --output-template-file /create_package/dockercise.output.yaml
 deploy:
   img: elimydlarz/docker-aws-cli:1.11.56
   env:
