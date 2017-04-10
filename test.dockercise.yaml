@@ -15,7 +15,7 @@ use_output_from_prior_stage:
   run: echo "$CREATE_FILE_OUTPUT" | grep "PASSED"
 get_code:
   img: bravissimolabs/alpine-git
-  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git get_code
+  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git $OUT
 use_volume_from_prior_stage:
   img: alpine
   vol: get_code
@@ -63,7 +63,7 @@ failed_stages_can_be_made_to_pass:
   neverFail: true
 sets_OUT_to_absolute_path_of_volume:
   img: alpine
-  run: echo $OUT | grep "/out"
+  run: echo $OUT | grep "/sets_OUT_to_absolute_path_of_volume"
 mounts_a_dir:
   after: get_code
   img: alpine
@@ -89,11 +89,11 @@ can_get_node_modules_from_correct_stage:
 scope_a_folder:
   img: alpine
   vol: can_operate_on_another_volume
-  run: cp -r /can_operate_on_another_volume/node_modules /supports_scoping_down_to_a_subfolder
+  run: cp -r /can_operate_on_another_volume/node_modules $OUT
 supports_scoping_down_to_a_subfolder:
   img: alpine
   vol: scope_a_folder
-  dir: /scope_a_folder
+  dir: /scope_a_folder/node_modules
   run: ls . | grep moment
 run_tests:
   after:

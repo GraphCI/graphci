@@ -99,7 +99,7 @@ const runDag = ({ stages, edges }, debug) => {
     return upstreamValues
       .concat(constantValues)
       .concat(formatEnvVar('GRAPH_CI_RUN_ID', runId))
-      .concat(formatEnvVar('OUT', '/out'));
+      .concat(formatEnvVar('OUT', `/${stage.name}`));
   };
 
   const onStage = (name, next) => {
