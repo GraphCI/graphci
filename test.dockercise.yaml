@@ -70,6 +70,22 @@ mounts_a_dir:
   vol: get_code
   dir: /get_code/src
   run: ls | grep run-dag
+can_operate_on_another_volume:
+  img: rkostrzewski/node-aws-lambda
+  on: get_code
+  run: npm install --production
+has_immutable_volumes:
+  after: can_operate_on_another_volume
+  img: alpine
+  vol: get_code
+  dir: /get_code
+  run: if [ ! -d node_modules ]; then echo "YES"; fi | grep "YES"
+can_get_node_modules_from_correct_stage:
+  after: has_immutable_volumes
+  img: alpine
+  vol: can_operate_on_another_volume
+  dir: /can_operate_on_another_volume
+  run: if [ -d node_modules ]; then echo "YES"; fi | grep "YES"
 run_tests:
   after:
     - test_global_env
@@ -84,3 +100,5 @@ run_tests:
     - failed_stages_can_be_made_to_pass
     - sets_OUT_to_absolute_path_of_volume
     - mounts_a_dir
+    - has_immutable_volumes
+    - can_get_node_modules_from_correct_stage

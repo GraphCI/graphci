@@ -9,9 +9,11 @@ const uploadRun = require('./s3').uploadRun;
 const uploadLogs = require('./s3').uploadLogs;
 const uniq = require('lodash/uniq');
 const colors = require('colors/safe');
+const uuid = require('uuid').v4;
 
 const mkdir = denodeify(fs.mkdir);
 const readFile = denodeify(fs.readFile);
+const copydir = denodeify(require('copy-dir'));
 
 const concurrency = 10;
 const SUCCESS = 0;
@@ -24,6 +26,8 @@ const isStagePluckGlobalEnvVar = (name) => process.env[name];
 const formatEnvVar = (KEY, val) => `${KEY}=${val}`;
 
 const runDag = ({ stages, edges }, debug) => {
+  console.info('Running the graph');
+
   const runId = moment().valueOf();
 
   const getRunPath = () => `./${runId}`;
@@ -31,7 +35,28 @@ const runDag = ({ stages, edges }, debug) => {
   const getAbsoluteRunVolsPath = () => `${process.cwd()}/${runId}/.vol`;
   const getStageOutputPath = (name) => `${runId}/${name}`;
   const getOutputOfStage = (name) => readFile(getStageOutputPath(name), 'utf8');
-  const buildVolumeMapping = (name) => `${getAbsoluteRunVolsPath()}/${name}:/${name}`;
+
+  const buildVolumeMapping = (volumeName, stageName) => {
+    if (volumeName === stageName) {
+      return Promise.resolve(`${getAbsoluteRunVolsPath()}/${volumeName}/original:/${volumeName}`);
+    }
+
+    const outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}/original`;
+    const uniqueVolumeName = `${getAbsoluteRunVolsPath()}/${volumeName}/${uuid()}`;
+
+    return copydir(outputOfPriorStage, uniqueVolumeName)
+      .then(() => `${uniqueVolumeName}:/${volumeName}:ro`)
+      .catch((err) => console.error(colors.red(err)));
+  };
+
+  const buildOperatesOnMapping = (volumeName, stageName) => {
+    const outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}/original`;
+    const defaultStageOutput = `${getAbsoluteRunVolsPath()}/${stageName}/original`;
+
+    return copydir(outputOfPriorStage, defaultStageOutput)
+      .then(() => `${defaultStageOutput}:/${stageName}`)
+      .catch((err) => console.error(colors.red(err)));
+  };
 
   uploadRun(runId, stages, edges).catch((error) => console.error(error));
 
@@ -50,27 +75,18 @@ const runDag = ({ stages, edges }, debug) => {
   const generateVolumeBindingsForStage = (stage) => {
     const volumes = [].concat(stage.vol).concat(stage.outVol);
     const upstream = volumes.filter((volumeName) => stages[volumeName]);
-    const dockerStyleMappings = volumes.filter((volumeName) => !stages[volumeName]);
+    const operatesOn = [stage.on].filter((x) => x);
 
-    const constantMappings = dockerStyleMappings
-      .map((volumeName) => volumeName.split(':'))
-      .filter((p) => !stages[p[0]])
-      .map((p) => p.join(':'));
+    const upstreamPromises = upstream.map((vol) => buildVolumeMapping(vol, stage.name));
+    const operatesOnPromises = operatesOn.map((vol) => buildOperatesOnMapping(vol, stage.name));
 
-    const upstreamIndirectBindings = dockerStyleMappings
-        .map((volumeName) => volumeName.split(':'))
-        .filter((p) => stages[p[0]])
-        .map((p) => `${getAbsoluteRunVolsPath()}/${p[0]}:${p[1]}`);
-
-    const allBindings = [
-      `${process.cwd()}/${runId}:/out`,
-      `${process.env.HOME}/.aws:/root/.aws`,
-    ]
-    .concat(constantMappings)
-    .concat(upstreamIndirectBindings)
-    .concat(upstream.map(buildVolumeMapping));
-
-    return uniq(allBindings);
+    return Promise.all(upstreamPromises.concat(operatesOnPromises))
+      .then((upstreamBindings) => [
+        `${process.cwd()}/${runId}:/out`,
+        `${process.env.HOME}/.aws:/root/.aws:ro`,
+      ]
+        .concat(upstreamBindings))
+      .then(uniq);
   };
 
   const getEnvironmentVariablesForStage = (stage) => {
@@ -109,21 +125,23 @@ const runDag = ({ stages, edges }, debug) => {
 
     const doDockerRun = (Env) => {
       const cmd = ['/bin/sh', '-c', `${stage.run}`];
-      const Binds = generateVolumeBindingsForStage(stage);
-      const WorkingDir = stage.dir;
+      const BindsPromise = generateVolumeBindingsForStage(stage);
+      const WorkingDir = stage.on ? `/${stage.name}` : stage.dir;
 
-      if (debug) {
-        console.info('stage', stage);
-        console.info('Binds', Binds);
-        console.info('Env', Env);
-        console.info('cmd', cmd);
-        console.info('WorkingDir', WorkingDir);
-      }
+      return BindsPromise.then((Binds) => {
+        if (debug) {
+          console.info('stage', stage);
+          console.info('Binds', Binds);
+          console.info('Env', Env);
+          console.info('cmd', cmd);
+          console.info('WorkingDir', WorkingDir);
+        }
 
-      return docker.run(stage.img, cmd, forkOutputStream(name, stage.noLog), {
-        Binds,
-        Env,
-        WorkingDir,
+        return docker.run(stage.img, cmd, forkOutputStream(name, stage.noLog), {
+          Binds,
+          Env,
+          WorkingDir,
+        });
       });
     };
 

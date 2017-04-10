@@ -20,6 +20,8 @@ const upstreamBindings = (volume) => !volume.includes(':');
 const dockerStyleMappings = (volume) => volume.includes(':');
 
 const buildDag = (stages, target) => {
+  console.info('Building the graph');
+
   const edges = [];
 
   const addEdge = (edge) => edges.push(edge);
@@ -32,7 +34,6 @@ const buildDag = (stages, target) => {
         edges.push(['dockercise', name]);
       }
 
-
       stage.name = name;
       stage.NAME = stage.name.toUpperCase();
       stage.env = (isArray(stage.env) ? stage.env : [stage.env]).filter(defined);
@@ -43,6 +44,7 @@ const buildDag = (stages, target) => {
       addDependencies(stage.after, name).forEach(addEdge);
       addDependencies(stage.env, name).forEach(addEdge);
       addDependencies(stage.vol.filter(upstreamBindings), name).forEach(addEdge);
+      addDependencies([stage.on].filter(defined), name).forEach(addEdge);
 
       stage.vol.filter(upstreamBindings).forEach((depName) => {
         stages[depName].outVol.push(depName);
