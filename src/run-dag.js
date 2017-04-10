@@ -9,7 +9,6 @@ const uploadRun = require('./s3').uploadRun;
 const uploadLogs = require('./s3').uploadLogs;
 const uniq = require('lodash/uniq');
 const colors = require('colors/safe');
-const uuid = require('uuid').v4;
 
 const mkdir = denodeify(fs.mkdir);
 const readFile = denodeify(fs.readFile);
@@ -66,15 +65,20 @@ const runDag = ({ stages, edges }, debug) => {
     return runStream;
   };
 
+  const isCode = (volumeName) => volumeName === 'code';
+  const isNotCode = (volumeName) => volumeName !== 'code';
+
   const generateVolumeBindingsForStage = (stage) => {
     const volumes = [].concat(stage.vol).concat(stage.outVol);
-    const upstream = volumes.filter((volumeName) => stages[volumeName]);
+    const upstream = volumes.filter((volumeName) => stages[volumeName]).filter(isNotCode);
+    const code = volumes.filter(isCode);
     const operatesOn = [stage.on].filter((x) => x);
 
     const upstreamPromises = upstream.map((vol) => buildVolumeMapping(vol, stage.name));
     const operatesOnPromises = operatesOn.map((vol) => buildOperatesOnMapping(vol, stage.name));
+    const codePromises = code.map(() => Promise.resolve(`${process.cwd()}:/code:ro`));
 
-    return Promise.all(upstreamPromises.concat(operatesOnPromises))
+    return Promise.all(upstreamPromises.concat(operatesOnPromises).concat(codePromises))
       .then((upstreamBindings) => [
         `${process.cwd()}/${runId}:/out`,
         `${process.env.HOME}/.aws:/root/.aws:ro`,
@@ -104,6 +108,11 @@ const runDag = ({ stages, edges }, debug) => {
 
   const onStage = (name, next) => {
     console.info(`Running: ${name}`);
+
+    if (name === 'code') {
+      // Code is never run, it is only mounted.
+      next();
+    }
 
     const started = moment().utc().format();
     const NAME = name.toUpperCase();

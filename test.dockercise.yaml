@@ -95,6 +95,10 @@ supports_scoping_down_to_a_subfolder:
   vol: scope_a_folder
   dir: /scope_a_folder/node_modules
   run: ls . | grep moment
+code_is_a_magic_volume_of_the_folder_you_execute_dockercise_from:
+  img: alpine
+  vol: code
+  run: cat code/package.json | grep dockercise
 run_tests:
   after:
     - test_global_env
@@ -112,3 +116,4 @@ run_tests:
     - has_immutable_volumes
     - can_get_node_modules_from_correct_stage
     - supports_scoping_down_to_a_subfolder
+    - code_is_a_magic_volume_of_the_folder_you_execute_dockercise_from
