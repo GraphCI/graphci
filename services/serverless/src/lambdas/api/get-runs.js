@@ -9,7 +9,7 @@ const params = {
   MaxKeys: 1000,
 };
 
-const pluckRuns = (prefix) => prefix.Prefix;
+const pluckRuns = (prefix) => prefix.Prefix.replace('/', '');
 
 module.exports = () => s3.listObjectsV2(params).promise()
   .then((results) => results.CommonPrefixes.map(pluckRuns));
