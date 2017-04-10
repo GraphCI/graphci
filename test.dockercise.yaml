@@ -86,6 +86,15 @@ can_get_node_modules_from_correct_stage:
   vol: can_operate_on_another_volume
   dir: /can_operate_on_another_volume
   run: if [ -d node_modules ]; then echo "YES"; fi | grep "YES"
+scope_a_folder:
+  img: alpine
+  vol: can_operate_on_another_volume
+  run: cp -r /can_operate_on_another_volume/node_modules /supports_scoping_down_to_a_subfolder
+supports_scoping_down_to_a_subfolder:
+  img: alpine
+  vol: scope_a_folder
+  dir: /scope_a_folder
+  run: ls . | grep moment
 run_tests:
   after:
     - test_global_env
@@ -102,3 +111,4 @@ run_tests:
     - mounts_a_dir
     - has_immutable_volumes
     - can_get_node_modules_from_correct_stage
+    - supports_scoping_down_to_a_subfolder
