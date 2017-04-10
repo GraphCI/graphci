@@ -37,21 +37,15 @@ const runDag = ({ stages, edges }, debug) => {
   const getOutputOfStage = (name) => readFile(getStageOutputPath(name), 'utf8');
 
   const buildVolumeMapping = (volumeName, stageName) => {
-    if (volumeName === stageName) {
-      return Promise.resolve(`${getAbsoluteRunVolsPath()}/${volumeName}/original:/${volumeName}`);
-    }
+    const outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}`;
+    const ro = volumeName !== stageName ? ':ro' : '';
 
-    const outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}/original`;
-    const uniqueVolumeName = `${getAbsoluteRunVolsPath()}/${volumeName}/${uuid()}`;
-
-    return copydir(outputOfPriorStage, uniqueVolumeName)
-      .then(() => `${uniqueVolumeName}:/${volumeName}:ro`)
-      .catch((err) => console.error(colors.red(err)));
+    return Promise.resolve(`${outputOfPriorStage}:/${volumeName}${ro}`);
   };
 
   const buildOperatesOnMapping = (volumeName, stageName) => {
-    const outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}/original`;
-    const defaultStageOutput = `${getAbsoluteRunVolsPath()}/${stageName}/original`;
+    const outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}`;
+    const defaultStageOutput = `${getAbsoluteRunVolsPath()}/${stageName}`;
 
     return copydir(outputOfPriorStage, defaultStageOutput)
       .then(() => `${defaultStageOutput}:/${stageName}`)
