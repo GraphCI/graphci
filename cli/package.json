@@ -8,14 +8,11 @@
     "test": "IS_SET=YES node index.js run_tests"
   },
   "bin": {
-    "dockercise": "index.js",
-    "dockercise-server": "web.js"
+    "dockercise": "index.js"
   },
   "files": [
     "index.js",
-    "web.js",
     "src/",
-    "readme.md",
     "package.json"
   ],
   "repository": "https://github.com/distributedlife/dockercise",

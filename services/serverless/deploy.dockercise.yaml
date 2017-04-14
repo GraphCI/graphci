@@ -8,27 +8,26 @@ create_deploy_bucket:
     - deploy_staging_bucket
   run: aws s3 mb s3://$DEPLOY_STAGING_BUCKET
   neverFail: true
-code:
-  img: bravissimolabs/alpine-git
-  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git code
-install_for_production:
-  img: rkostrzewski/node-aws-lambda
+get_serverless_files:
+  img: alpine
   vol: code
   dir: /code/services/serverless
+  run: cp -r . $OUT
+npm_install:
+  img: rkostrzewski/node-aws-lambda
+  on: get_serverless_files
   run: npm install --production
 create_package:
   after:
     - create_deploy_bucket
-    - install_for_production
   img: elimydlarz/docker-aws-cli:1.11.56
   env:
     - aws_access_key_id
     - aws_secret_access_key
     - aws_session_token
     - deploy_staging_bucket
-  vol: code
-  dir: /code/services/serverless
-  run: aws cloudformation package --template-file dockercise.input.yaml --s3-bucket $DEPLOY_STAGING_BUCKET --output-template-file /create_package/dockercise.output.yaml
+  vol: npm_install
+  run: aws cloudformation package --template-file dockercise.input.yaml --s3-bucket $DEPLOY_STAGING_BUCKET --output-template-file $OUT/dockercise.output.yaml
 deploy:
   img: elimydlarz/docker-aws-cli:1.11.56
   env:
@@ -36,7 +35,5 @@ deploy:
     - aws_secret_access_key
     - aws_session_token
     - aws_default_region
-  vol:
-    - code
-    - create_package
+  vol: create_package
   run: aws cloudformation deploy --template-file create_package/dockercise.output.yaml --capabilities CAPABILITY_IAM --stack-name dockercise

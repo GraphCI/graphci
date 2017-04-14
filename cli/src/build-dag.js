@@ -47,7 +47,9 @@ const buildDag = (stages, target) => {
       addDependencies([stage.on].filter(defined), name).forEach(addEdge);
 
       stage.vol.filter(upstreamBindings).forEach((depName) => {
-        stages[depName].outVol.push(depName);
+        if (stages[depName]) {
+          stages[depName].outVol.push(depName);
+        }
       });
       stage.vol.filter(dockerStyleMappings).forEach((mapping) => {
         const depName = mapping.split(':')[0];

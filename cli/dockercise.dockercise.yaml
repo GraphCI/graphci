@@ -1,0 +1,21 @@
+generate-npmrc:
+  img: alpine
+  env: NPM_TOKEN
+  run: echo //registry.npmjs.org/:_authToken=$NPM_TOKEN
+  noLog: true
+user:
+  after: generate-npmrc
+  img: alpine
+  run: cp out/generate-npmrc ~/.npmrc
+patch-release:
+  img: node:alpine
+  vol: user:/root
+  run: ls -la ~/
+minor-release:
+  after: generate-npmrc
+  img: node:alpine
+  run: npm version minor
+breaking-change:
+  after: generate-npmrc
+  img: node:alpine
+  run: npm version major
