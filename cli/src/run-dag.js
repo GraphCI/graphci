@@ -29,22 +29,33 @@ const runDag = ({ stages, edges }, debug) => {
 
   const runId = moment().valueOf();
 
-  const getRunPath = () => `./${runId}`;
-  const getRunVolsPath = () => `./${runId}/.vol`;
-  const getAbsoluteRunVolsPath = () => `${process.cwd()}/${runId}/.vol`;
-  const getStageOutputPath = (name) => `${runId}/${name}`;
+  const getRunPath = () => `/tmp/${runId}`;
+  const getRunVolsPath = () => `${getRunPath()}/.vol`;
+  const getAbsoluteRunVolsPath = getRunVolsPath;
+  const getStageOutputPath = (name) => `${getRunPath()}/${name}`;
   const getOutputOfStage = (name) => readFile(getStageOutputPath(name), 'utf8');
+
+  const asPromise = (thing) => Promise.resolve(thing);
 
   const buildVolumeMapping = (volumeName, stageName) => {
     const outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}`;
     const ro = volumeName !== stageName ? ':ro' : '';
 
-    return Promise.resolve(`${outputOfPriorStage}:/${volumeName}${ro}`);
+    return `${outputOfPriorStage}:/${volumeName}${ro}`;
   };
 
+
   const buildOperatesOnMapping = (volumeName, stageName) => {
-    const outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}`;
+    let outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}`;
     const defaultStageOutput = `${getAbsoluteRunVolsPath()}/${stageName}`;
+
+    if (volumeName === 'code') {
+      outputOfPriorStage = process.cwd();
+    }
+
+    if (debug) {
+      console.info(`Copying from "${outputOfPriorStage}" to "${defaultStageOutput}"`);
+    }
 
     return copydir(outputOfPriorStage, defaultStageOutput)
       .then(() => `${defaultStageOutput}:/${stageName}`)
@@ -74,16 +85,16 @@ const runDag = ({ stages, edges }, debug) => {
     const code = volumes.filter(isCode);
     const operatesOn = [stage.on].filter((x) => x);
 
-    const upstreamPromises = upstream.map((vol) => buildVolumeMapping(vol, stage.name));
+    const upstreamPromises = upstream.map((vol) => (asPromise(buildVolumeMapping(vol, stage.name))));
     const operatesOnPromises = operatesOn.map((vol) => buildOperatesOnMapping(vol, stage.name));
-    const codePromises = code.map(() => Promise.resolve(`${process.cwd()}:/code:ro`));
+    const codePromises = code.map(() => asPromise(`${process.cwd()}:/code:ro`));
 
     return Promise.all(upstreamPromises.concat(operatesOnPromises).concat(codePromises))
       .then((upstreamBindings) => [
-        `${process.cwd()}/${runId}:/out`,
+        `${getRunPath()}:/out`,
         `${process.env.HOME}/.aws:/root/.aws:ro`,
-      ]
-        .concat(upstreamBindings))
+        buildVolumeMapping(stage.name, stage.name),
+      ].concat(upstreamBindings))
       .then(uniq);
   };
 
@@ -107,7 +118,7 @@ const runDag = ({ stages, edges }, debug) => {
   };
 
   const onStage = (name, next) => {
-    console.info(`Running: ${name}`);
+    console.info(`\nRunning: ${name}`);
 
     if (name === 'code') {
       // Code is never run, it is only mounted.

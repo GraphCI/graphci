@@ -1,5 +1,5 @@
 const prune = require('./utils/prune');
-
+const colors = require('colors/safe');
 const isArray = require('lodash/isArray');
 
 const keysWeCareAbout = ['after', 'img', 'run', 'vol', 'env', 'done'];
@@ -46,17 +46,17 @@ const buildDag = (stages, target) => {
       addDependencies(stage.vol.filter(upstreamBindings), name).forEach(addEdge);
       addDependencies([stage.on].filter(defined), name).forEach(addEdge);
 
-      stage.vol.filter(upstreamBindings).forEach((depName) => {
-        if (stages[depName]) {
-          stages[depName].outVol.push(depName);
+      const warnAboutMissingDep = (missing, consumer) => {
+        console.error(colors.red(`Cannot find "${missing}" to build volume dependency with "${consumer}"`));
+      };
+
+      if (stage.on && stage.on !== 'code') {
+        if (!stages[stage.on]) {
+          warnAboutMissingDep(stage.on, name);
+        } else {
+          stages[stage.on].outVol.push(name);
         }
-      });
-      stage.vol.filter(dockerStyleMappings).forEach((mapping) => {
-        const depName = mapping.split(':')[0];
-        if (stages[depName]) {
-          stages[depName].outVol.push(depName);
-        }
-      });
+      }
     });
 
   return { stages, edges: prune(target, [], edges) };

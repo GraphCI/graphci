@@ -13,13 +13,13 @@ use_output_from_prior_stage:
   img: alpine
   env: create_file_output
   run: echo "$CREATE_FILE_OUTPUT" | grep "PASSED"
-get_code:
+can_get_more_code:
   img: bravissimolabs/alpine-git
   run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git $OUT
 use_volume_from_prior_stage:
   img: alpine
-  vol: get_code
-  run: cat get_code/package.json | grep dockercise
+  vol: can_get_more_code
+  run: cat can_get_more_code/cli/package.json | grep dockercise
 no_log_stage:
   img: alpine
   run: echo "SUPER SECRET"
@@ -65,20 +65,23 @@ sets_OUT_to_absolute_path_of_volume:
   img: alpine
   run: echo $OUT | grep "/sets_OUT_to_absolute_path_of_volume"
 mounts_a_dir:
-  after: get_code
   img: alpine
-  vol: get_code
-  dir: /get_code/src
+  vol: can_get_more_code
+  dir: /can_get_more_code/cli/src
   run: ls | grep run-dag
+scope_to_cli:
+  img: alpine
+  vol: can_get_more_code
+  run: cp -r /can_get_more_code/cli/* $OUT
 can_operate_on_another_volume:
   img: rkostrzewski/node-aws-lambda
-  on: get_code
+  on: scope_to_cli
   run: npm install --production
 has_immutable_volumes:
   after: can_operate_on_another_volume
   img: alpine
-  vol: get_code
-  dir: /get_code
+  vol: can_get_more_code
+  dir: /can_get_more_code
   run: if [ ! -d node_modules ]; then echo "YES"; fi | grep "YES"
 can_get_node_modules_from_correct_stage:
   after: has_immutable_volumes
@@ -99,6 +102,16 @@ code_is_a_magic_volume_of_the_folder_you_execute_dockercise_from:
   img: alpine
   vol: code
   run: cat code/package.json | grep dockercise
+can_operate_on_code:
+  img: rkostrzewski/node-aws-lambda
+  on: code
+  run: npm install --production
+can_get_node_modules_from_operated_on_code:
+  after: can_operate_on_code
+  img: alpine
+  vol: can_operate_on_code
+  dir: /can_operate_on_code
+  run: if [ -d node_modules ]; then echo "YES"; fi | grep "YES"
 run_tests:
   after:
     - test_global_env
@@ -115,5 +128,6 @@ run_tests:
     - mounts_a_dir
     - has_immutable_volumes
     - can_get_node_modules_from_correct_stage
+    - can_get_node_modules_from_operated_on_code
     - supports_scoping_down_to_a_subfolder
     - code_is_a_magic_volume_of_the_folder_you_execute_dockercise_from
