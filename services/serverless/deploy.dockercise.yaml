@@ -8,14 +8,9 @@ create_deploy_bucket:
     - deploy_staging_bucket
   run: aws s3 mb s3://$DEPLOY_STAGING_BUCKET
   neverFail: true
-get_serverless_files:
-  img: alpine
-  vol: code
-  dir: /code/services/serverless
-  run: cp -r . $OUT
 npm_install:
   img: rkostrzewski/node-aws-lambda
-  on: get_serverless_files
+  on: code
   run: npm install --production
 create_package:
   after:
