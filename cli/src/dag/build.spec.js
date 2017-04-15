@@ -29,4 +29,28 @@ describe('dag build', () => {
       ]);
     });
   });
+
+  context('different kinds of dependencies', () => {
+    const stages = {
+      a: {},
+      b: { after: 'a' },
+      c: { img: 'b' },
+      d: { run: 'c' },
+      e: { vol: 'd' },
+      f: { env: 'e' },
+      g: { done: 'f' },
+    };
+    const targets = ['g'];
+
+    it('builds dag', () => {
+      expect(build(stages, targets)).to.eql([
+        ['f', 'g'],
+        ['e', 'f'],
+        ['d', 'e'],
+        ['c', 'd'],
+        ['b', 'c'],
+        ['a', 'b'],
+      ]);
+    });
+  });
 });
