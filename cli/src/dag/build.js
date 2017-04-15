@@ -8,7 +8,7 @@ const getDependencies = (targetStage) =>
 
 const hasNoRealEdges = (edges, stage) => edges.every(([x, y]) => x !== stage && y !== stage);
 
-const build = (stages, [target, ...targets], edges = []) => {
+const buildEdges = (stages, [target, ...targets], edges = []) => {
   const targetStage = stages[target];
   const dependencies = getDependencies(targetStage);
   if (dependencies.length) {
@@ -23,10 +23,15 @@ const build = (stages, [target, ...targets], edges = []) => {
   }
 
   if (targets.length) {
-    return build(stages, targets, edges);
+    return buildEdges(stages, targets, edges);
   }
 
   return edges;
 };
+
+const build = (stages, targets) => ({
+  edges: buildEdges(stages, targets),
+  stages,
+});
 
 module.exports = build;

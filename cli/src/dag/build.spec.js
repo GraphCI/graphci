@@ -17,8 +17,8 @@ describe('dag build', () => {
     };
     const targets = ['d', 'h', 'i'];
 
-    it('builds dag', () => {
-      expect(build(stages, targets)).to.eql([
+    it('builds edges', () => {
+      expect(build(stages, targets).edges).to.eql([
         ['b', 'd'],
         ['c', 'd'],
         ['f', 'h'],
@@ -42,8 +42,8 @@ describe('dag build', () => {
     };
     const targets = ['g'];
 
-    it('builds dag', () => {
-      expect(build(stages, targets)).to.eql([
+    it('builds edges', () => {
+      expect(build(stages, targets).edges).to.eql([
         ['f', 'g'],
         ['e', 'f'],
         ['d', 'e'],
