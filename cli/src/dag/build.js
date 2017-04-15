@@ -11,6 +11,7 @@ const hasNoRealEdges = (edges, stage) => edges.every(([x, y]) => x !== stage && 
 const buildEdges = (stages, [target, ...targets], edges = []) => {
   const targetStage = stages[target];
   const dependencies = getDependencies(targetStage);
+
   if (dependencies.length) {
     dependencies.forEach((dependency) => {
       edges.push([dependency, target]);
@@ -29,9 +30,14 @@ const buildEdges = (stages, [target, ...targets], edges = []) => {
   return edges;
 };
 
+const buildStages = (stages) =>
+  Object.keys(stages).map((name) => ({
+    name,
+  }));
+
 const build = (stages, targets) => ({
   edges: buildEdges(stages, targets),
-  stages,
+  stages: buildStages(stages),
 });
 
 module.exports = build;
