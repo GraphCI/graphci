@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "test": "IS_SET=YES node index.js run_tests",
-    "debug": "IS_SET=YES node index.js run_tests 1"
+    "debug": "IS_SET=YES node index.js run_tests 1",
+    "test:watch": "mocha **/*.spec.js --watch"
   },
   "bin": {
     "dockercise": "index.js"
@@ -37,11 +38,13 @@
     "uuid": "^3.0.1"
   },
   "devDependencies": {
+    "chai": "^3.5.0",
     "eslint": "^3.17.1",
     "eslint-config-airbnb": "^14.1.0",
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-jsx-a11y": "^4.0.0",
     "eslint-plugin-mocha": "^4.8.0",
-    "eslint-plugin-react": "^6.10.0"
+    "eslint-plugin-react": "^6.10.0",
+    "mocha": "^3.2.0"
   }
 }
