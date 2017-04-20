@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 
 const RunOverview = ({ run }) => (
-  <Link to={`/web/runs/${run}`}>
+  <Link to={`/web/run/${run}`} style={{ display: 'block' }}>
     <span> RunId: {run}</span>
     <span> Date: {moment(run).format('dddd DD of MMMM, YYYY  @ HH:MM (Z)')}</span>
     <span> Started: {moment(run).fromNow()}</span>
@@ -18,5 +18,5 @@ const RunListView = ({ runs }) => (
 );
 
 export default connect((state) => ({
-  runs: state.runs,
+  runs: state.runs.ids,
 }))(RunListView);

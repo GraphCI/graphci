@@ -1,6 +1,6 @@
 import { get } from 'axios';
 import isEmpty from 'lodash/isEmpty';
-import { runsUrl } from '../endpoints';
+import { runsUrl, runUrl } from '../endpoints';
 
 export const RUNS_STORED = 'GRAPHCI/RUNS_STORED';
 const runsStored = (runs) => ({
@@ -15,5 +15,20 @@ export const getAllRuns = () => (dispatch) => (
     .then(handleResponse)
     .then((runs) => {
       dispatch(runsStored(runs));
+    })
+);
+
+export const RUN_STORED = 'GRAPHCI/RUN_STORED';
+const runStored = (runId, run) => ({
+  type: RUN_STORED,
+  runId,
+  run,
+});
+
+export const getRun = (runId) => (dispatch) => (
+  get(runUrl(runId))
+    .then(handleResponse)
+    .then((run) => {
+      dispatch(runStored(runId, run));
     })
 );

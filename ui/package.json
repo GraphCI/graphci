@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "axios": "^0.16.1",
+    "cytoscape": "^3.0.0",
     "history": "^4.6.1",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
