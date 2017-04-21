@@ -204,7 +204,7 @@ const runDag = ({ stages, edges }, debug, tags) => {
 
     if (nothingToDo(stage)) {
       if (isStagePluckGlobalEnvVar(NAME)) {
-        console.info(formatEnvVar(NAME, process.env[NAME]));
+        console.info(formatEnvVar(NAME, `"${process.env[NAME]}"`));
       } else {
         console.warn(colors.yellow(`Stage "${name}" has nothing to do. Is this intentional?`));
       }
