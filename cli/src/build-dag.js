@@ -36,6 +36,7 @@ const buildDag = (stages, target) => {
 
       stage.name = name;
       stage.NAME = stage.name.toUpperCase();
+      stage.result = 'unknown';
       stage.env = (isArray(stage.env) ? stage.env : [stage.env]).filter(defined);
       stage.vol = (isArray(stage.vol) ? stage.vol : [stage.vol]).filter(defined);
       stage.after = (isArray(stage.after) ? stage.after : [stage.after]).filter(defined);

@@ -11,12 +11,16 @@ const colors = require('colors/safe');
 const target = process.argv[2];
 const debug = process.argv[3];
 
+const base = {
+  meta: { tags: [] },
+};
+
 glob('**/*.dockercise.yaml', { ignore: ['**/node_modules/**'] })
   .then((files) => Promise.all(files.map((filename) => readFile(filename, 'utf8'))))
   .then((files) => files.map(yaml.safeLoad))
-  .then((files) => files.reduce((all, file) => Object.assign({}, all, file)), {})
+  .then((files) => files.reduce((all, file) => Object.assign(base, all, file)), {})
   .then((stages) => buildDag(stages, target))
-  .then((dag) => runDag(dag, debug))
+  .then((dag) => runDag(dag, debug, [target]))
   .then(([runId, result]) => {
     console.log(colors.green(`Run successful: ${runId}`));
     process.exit(result);

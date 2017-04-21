@@ -6,8 +6,10 @@ const stream = require('stream');
 const startDocker = require('./docker');
 const uploadResults = require('./s3').uploadResults;
 const uploadRun = require('./s3').uploadRun;
+const uploadRunSummary = require('./s3').uploadRunSummary;
 const uploadLogs = require('./s3').uploadLogs;
 const uniq = require('lodash/uniq');
+const clone = require('lodash/cloneDeep');
 const colors = require('colors/safe');
 
 const mkdir = denodeify(fs.mkdir);
@@ -24,10 +26,11 @@ const nothingToDo = (stage) => !stage || !stage.img;
 const isStagePluckGlobalEnvVar = (name) => process.env[name];
 const formatEnvVar = (KEY, val) => `${KEY}=${val}`;
 
-const runDag = ({ stages, edges }, debug) => {
+const runDag = ({ stages, edges }, debug, tags) => {
   console.info('Running the graph');
 
   const runId = moment().valueOf();
+  const stageOutcomes = clone(stages);
 
   const getRunPath = () => `/tmp/${runId}`;
   const getRunVolsPath = () => `${getRunPath()}/.vol`;
@@ -43,7 +46,6 @@ const runDag = ({ stages, edges }, debug) => {
 
     return `${outputOfPriorStage}:/${volumeName}${ro}`;
   };
-
 
   const buildOperatesOnMapping = (volumeName, stageName) => {
     let outputOfPriorStage = `${getAbsoluteRunVolsPath()}/${volumeName}`;
@@ -62,7 +64,7 @@ const runDag = ({ stages, edges }, debug) => {
       .catch((err) => console.error(colors.red(err)));
   };
 
-  uploadRun(runId, stages, edges).catch((error) => console.error(error));
+  uploadRun(runId, stages, edges);
 
   const forkOutputStream = (name, noLog) => {
     const runStream = stream.PassThrough();
@@ -121,7 +123,7 @@ const runDag = ({ stages, edges }, debug) => {
     console.info(`\nRunning: ${name}`);
 
     if (name === 'code') {
-      // Code is never run, it is only mounted.
+      // "Code is never run, it is only mounted." - T.S. Elliot.
       next();
     }
 
@@ -191,8 +193,14 @@ const runDag = ({ stages, edges }, debug) => {
         });
     };
 
-    const uploadSuccessResults = () => uploadResults(runId, name, results());
-    const uploadFailureResults = () => uploadResults(runId, name, results(false));
+    const uploadSuccessResults = () => uploadResults(runId, name, results()).then(() => {
+      stageOutcomes[name].result = 'passed';
+    });
+
+    const uploadFailureResults = () => uploadResults(runId, name, results(false))
+      .then(() => {
+        stageOutcomes[name].result = 'failed';
+      });
 
     if (nothingToDo(stage)) {
       if (isStagePluckGlobalEnvVar(NAME)) {
@@ -205,7 +213,9 @@ const runDag = ({ stages, edges }, debug) => {
         .then(() => next());
     }
 
-    return docker.pull(stage.img)
+    const pull = docker.pull(stage.img);
+
+    return pull
       .then(() => Promise.all(getEnvironmentVariablesForStage(stage)))
       .then(doDockerRun)
       .then(findOutResultOfDockerRun)
@@ -222,6 +232,12 @@ const runDag = ({ stages, edges }, debug) => {
       });
   };
 
+  const buildAndUploadRunSummary = (extraTags) => {
+    stageOutcomes.meta.tags = tags.concat(extraTags);
+
+    return uploadRunSummary(runId, stageOutcomes, edges);
+  };
+
   return mkdir(getRunPath())
     .then(() => mkdir(getRunVolsPath()))
     .then(() => new Promise((resolve, reject) => {
@@ -229,8 +245,9 @@ const runDag = ({ stages, edges }, debug) => {
 
       dag(edges, concurrency, onStage, done);
     }))
+    .then(() => buildAndUploadRunSummary(['passed']))
     .then(() => [runId, SUCCESS])
-    .catch(() => [runId, FAILURE]);
+    .catch(() => buildAndUploadRunSummary(['passed']).then(() => [runId, FAILURE]));
 };
 
 module.exports = runDag;

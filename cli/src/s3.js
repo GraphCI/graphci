@@ -32,6 +32,20 @@ const uploadRun = (runId, stages, edges) => {
   return bucket.upload(params).promise().catch(warnAboutAccessDenied);
 };
 
+const uploadRunSummary = (runId, stages, edges) => {
+  const bucket = new AWS.S3({ params: { Bucket } });
+
+  const params = {
+    Key: getFilename(runId, 'summary', 'json'),
+    Body: new Buffer(JSON.stringify({ stages, edges }), 'utf8'),
+    ContentEncoding: 'utf8',
+    ContentType: 'application/json',
+    ACL: 'public-read',
+  };
+
+  return bucket.upload(params).promise().catch(warnAboutAccessDenied);
+};
+
 const uploadLogs = (runId, name, file) => {
   const bucket = new AWS.S3({ params: { Bucket } });
 
@@ -68,4 +82,4 @@ const uploadResults = (runId, name, results) => {
   return bucket.upload(params).promise().catch(warnAboutAccessDenied);
 };
 
-module.exports = { uploadRun, uploadResults, uploadLogs };
+module.exports = { uploadRun, uploadRunSummary, uploadResults, uploadLogs };
