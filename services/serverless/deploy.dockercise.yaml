@@ -22,7 +22,7 @@ create_package:
     - aws_session_token
     - deploy_staging_bucket
   vol: npm_install
-  run: aws cloudformation package --template-file dockercise.input.yaml --s3-bucket $DEPLOY_STAGING_BUCKET --output-template-file $OUT/dockercise.output.yaml
+  run: aws cloudformation package --template-file npm_install/dockercise.input.yaml --s3-bucket $DEPLOY_STAGING_BUCKET --output-template-file $OUT/dockercise.output.yaml
 deploy:
   img: elimydlarz/docker-aws-cli:1.11.56
   env:

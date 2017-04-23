@@ -22,7 +22,7 @@
     "body-parser": "^1.17.1",
     "change-case": "^3.0.1",
     "cors": "^2.8.3",
-    "dockercise": "^2.2.0",
+    "dockercise": "^2.3.2",
     "dynamodb-marshaler": "^2.0.0",
     "express": "^4.15.2",
     "express-jwt": "^5.1.0",
