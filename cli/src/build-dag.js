@@ -17,7 +17,7 @@ const addDependencies = (dependencies, name) => {
 
 const defined = (x) => x;
 const upstreamBindings = (volume) => !volume.includes(':');
-const dockerStyleMappings = (volume) => volume.includes(':');
+const isNotCode = (volume) => volume !== 'code';
 
 const buildDag = (stages, target) => {
   console.info('Building the graph');
@@ -44,8 +44,8 @@ const buildDag = (stages, target) => {
 
       addDependencies(stage.after, name).forEach(addEdge);
       addDependencies(stage.env, name).forEach(addEdge);
-      addDependencies(stage.vol.filter(upstreamBindings), name).forEach(addEdge);
-      addDependencies([stage.on].filter(defined), name).forEach(addEdge);
+      addDependencies(stage.vol.filter(upstreamBindings).filter(isNotCode), name).forEach(addEdge);
+      addDependencies([stage.on].filter(defined).filter(isNotCode), name).forEach(addEdge);
 
       const warnAboutMissingDep = (missing, consumer) => {
         console.error(colors.red(`Cannot find "${missing}" to build volume dependency with "${consumer}"`));
