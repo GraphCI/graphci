@@ -17,8 +17,6 @@ class Cytoscape extends Component {
   }
 
   renderCytoscapeElement() {
-    console.log('* Cytoscape.js is rendering the graph..');
-
     this.cy = cytoscape(
       {
         container: document.getElementById('cy'),
@@ -27,25 +25,33 @@ class Cytoscape extends Component {
         autounselectify: true,
 
         style: cytoscape.stylesheet()
-                  .selector('node')
-                  .css({
-                    height: 80,
-                    width: 80,
-                    'background-fit': 'cover',
-                    'border-color': '#000',
-                    'border-width': 3,
-                    'border-opacity': 0.5,
-                    content: 'data(id)',
-                    'text-valign': 'center',
-                  })
-                  .selector('edge')
-                  .css({
-                    width: 6,
-                    'target-arrow-shape': 'triangle',
-                    'line-color': '#ffaaaa',
-                    'target-arrow-color': '#ffaaaa',
-                    'curve-style': 'bezier',
-                  }),
+          .selector('node')
+            .css({
+              height: 80,
+              width: 80,
+              'background-fit': 'cover',
+              'border-color': '#000',
+              'border-width': 3,
+              'border-opacity': 0.5,
+              content: 'data(id)',
+              'text-valign': 'center',
+            })
+          .selector('.passed')
+            .css({
+              'background-color': 'green',
+            })
+          .selector('.failed')
+            .css({
+              'background-color': 'red',
+            })
+          .selector('edge')
+            .css({
+              width: 6,
+              'target-arrow-shape': 'triangle',
+              'line-color': '#ffaaaa',
+              'target-arrow-color': '#ffaaaa',
+              'curve-style': 'bezier',
+            }),
         elements: this.props.elements,
         layout: {
           name: 'breadthfirst',
@@ -53,6 +59,13 @@ class Cytoscape extends Component {
           padding: 10,
         },
       });
+
+    if (this.props.onTap) {
+      this.cy.on('tap', 'node', (evt) => {
+        const node = evt.target.id();
+        setTimeout(() => this.props.onTap(node), 0);
+      });
+    }
   }
 
   componentDidMount() {
