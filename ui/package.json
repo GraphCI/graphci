@@ -9,6 +9,7 @@
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
     "react": "^15.4.2",
+    "react-ansi-style": "^1.0.0",
     "react-dom": "^15.4.2",
     "react-modal": "^1.7.7",
     "react-redux": "^5.0.4",
