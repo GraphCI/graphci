@@ -11,7 +11,7 @@ const app = express();
 const getCode = (error) => {
   console.error(error);
 
-  return error.code || 400;
+  return error.code || error.statusCode || 400;
 };
 
 app.use(cors());
