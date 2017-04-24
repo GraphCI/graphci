@@ -2,10 +2,10 @@ const AWS = require('aws-sdk');
 
 const s3 = new AWS.S3();
 
-const params = {
+const params = (runId) => ({
   Bucket: 'dockercise',
-  Key: '1489797888034/index.json',
-};
+  Key: `${runId}/summary.json`
+});
 
-module.exports = () => s3.getObject(params).promise()
+module.exports = (runId) => s3.getObject(params(runId)).promise()
   .then((data) => JSON.parse(data.Body.toString()));

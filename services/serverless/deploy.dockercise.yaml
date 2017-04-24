@@ -9,7 +9,7 @@ create_deploy_bucket:
   run: aws s3 mb s3://$DEPLOY_STAGING_BUCKET
   neverFail: true
 npm_install:
-  img: rkostrzewski/node-aws-lambda
+  img: mhart/alpine-node
   on: code
   run: npm install --production
 create_package:
