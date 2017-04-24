@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 
 const getRun = require('./get-run');
 const getRuns = require('./get-runs');
+const getNode = require('./get-node');
 
 const app = express();
 
@@ -26,6 +27,12 @@ app.get('/api/v1/runs', (req, res) => (
 app.get('/api/v1/run/:runId', (req, res) => (
   getRun(req.params.runId)
     .then((data) => res.json(data))
+    .catch((err) => res.sendStatus(getCode(err)))
+));
+
+app.get('/api/v1/run/:runId/:node', (req, res) => (
+  getNode(req.params.runId, req.params.node)
+    .then((data) => res.send(data))
     .catch((err) => res.sendStatus(getCode(err)))
 ));
 
