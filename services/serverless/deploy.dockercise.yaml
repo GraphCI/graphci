@@ -1,3 +1,6 @@
+meta:
+  subgraphs:
+    - graphci/aws-assume-role:latest
 create_deploy_bucket:
   img: elimydlarz/docker-aws-cli:1.11.56
   env:
