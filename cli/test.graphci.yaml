@@ -23,7 +23,7 @@ can_get_more_code:
 use_volume_from_prior_stage:
   img: alpine
   vol: can_get_more_code
-  run: cat can_get_more_code/cli/package.json | grep dockercise
+  run: cat can_get_more_code/cli/package.json | grep graphci
 no_log_stage:
   img: alpine
   run: echo "SUPER SECRET"
@@ -70,10 +70,10 @@ supports_scoping_down_to_a_subfolder:
   vol: scope_a_folder
   dir: /scope_a_folder/node_modules
   run: ls . | grep moment
-code_is_a_magic_volume_of_the_folder_you_execute_dockercise_from:
+code_is_a_magic_volume_of_the_folder_you_execute_graphci_from:
   img: alpine
   vol: code
-  run: cat code/package.json | grep dockercise
+  run: cat code/package.json | grep graphci
 can_operate_on_code:
   img: rkostrzewski/node-aws-lambda
   on: code
@@ -102,5 +102,5 @@ run_tests:
     - can_get_node_modules_from_correct_stage
     - can_get_node_modules_from_operated_on_code
     - supports_scoping_down_to_a_subfolder
-    - code_is_a_magic_volume_of_the_folder_you_execute_dockercise_from
+    - code_is_a_magic_volume_of_the_folder_you_execute_graphci_from
     - test_dep_on_subgraph_node

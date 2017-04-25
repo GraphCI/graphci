@@ -31,7 +31,7 @@ const buildDag = (stages, target) => {
     .forEach((name) => {
       const stage = stages[name];
       if (!stage.after && !stage.env && !stage.vol) {
-        edges.push(['dockercise', name]);
+        edges.push(['graphci', name]);
       }
 
       stage.name = name;

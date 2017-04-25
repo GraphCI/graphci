@@ -19,7 +19,7 @@ app.post('/github/push', (req, res) => {
   shell.exec(`git clone ${url} ${triggeringRepositoryDir}`);
   shell.exec(`cd ${triggeringRepositoryDir}`);
   shell.exec(`git checkout ${commit}`);
-  shell.exec(`dockercise ${target}`);
+  shell.exec(`graphci ${target}`);
   shell.exec('cd ..');
 
   res.sendStatus(200);

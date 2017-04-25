@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
 
 const params = {
-  Bucket: 'dockercise',
+  Bucket: 'graphci',
   Delimiter: '/',
   EncodingType: 'url',
   MaxKeys: 1000,

@@ -5,7 +5,7 @@ const colors = require('colors/safe');
 
 const readFile = denodeify(fs.readFile);
 
-const Bucket = 'dockercise';
+const Bucket = 'graphci';
 const getFilename = (runId, name, ext) => `${[runId, name].join('/')}.${ext}`;
 
 let warnedAboutAccessDenied = false;
@@ -14,7 +14,7 @@ const warnAboutAccessDenied = (err) => {
     return;
   }
 
-  console.warn(colors.yellow('dockercise| A problem occurred trying to upload results:', err.message));
+  console.warn(colors.yellow('graphci| A problem occurred trying to upload results:', err.message));
   warnedAboutAccessDenied = true;
 };
 

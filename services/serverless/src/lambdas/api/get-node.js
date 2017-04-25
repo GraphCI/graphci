@@ -3,12 +3,12 @@ const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
 
 const log = (runId, node) => ({
-  Bucket: 'dockercise',
+  Bucket: 'graphci',
   Key: `${runId}/${node}.log`,
 });
 
 const results = (runId, node) => ({
-  Bucket: 'dockercise',
+  Bucket: 'graphci',
   Key: `${runId}/${node}.json`,
 });
 

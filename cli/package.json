@@ -10,14 +10,14 @@
     "test:watch": "mocha **/*.spec.js --watch"
   },
   "bin": {
-    "dockercise": "index.js"
+    "graphci": "index.js"
   },
   "files": [
     "index.js",
     "src/",
     "package.json"
   ],
-  "repository": "https://github.com/distributedlife/dockercise",
+  "repository": "https://github.com/graphci/graphci",
   "author": "Ryan Boucher",
   "license": "ISC",
   "dependencies": {
