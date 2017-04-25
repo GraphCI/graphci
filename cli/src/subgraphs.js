@@ -17,22 +17,29 @@ const makeStream = () => {
   return [s, () => content];
 };
 
-const fetchSubgraphs = (files) => {
-  const toFetch = uniq(files
-                    .reduce((subs, sub) => subs.concat(sub.meta && sub.meta.subgraphs), [])
-                    .filter((x) => x));
+const fetchSubgraphs = (files = []) => {
+  const toFetch = uniq(files.reduce((subs, sub) => subs.concat(sub.meta && sub.meta.subgraphs), [])
+         .filter((x) => x));
+
+  if (files.length === 0) {
+    return Promise.resolve([]);
+  }
 
   return Promise.all(toFetch.map((subgraph) => {
     console.info(`Fetching subgraph "${subgraph}"`);
 
-    const [dockerOutputStream, getContent] = makeStream();
+    const [dockerOutputStream, getSubgraph] = makeStream();
 
     return docker.pull(subgraph)
       .then(() => docker.run(subgraph, [], dockerOutputStream))
-      .then(getContent)
+      .then(getSubgraph)
       .then(yaml.safeLoad);
   }))
-  .then((fetchedSubgraphs) => files.concat(...fetchedSubgraphs));
+  .then((fetchedSubgraphs) => (
+    fetchSubgraphs(fetchedSubgraphs).then((more) => (
+      files.concat(...fetchedSubgraphs).concat(...more)
+    ))
+  ));
 };
 
 module.exports = fetchSubgraphs;

@@ -1,6 +1,7 @@
 meta:
   subgraphs:
     - graphci/tests-for-s3:latest
+    - graphci/graphci-tests-with-subgraphs:latest
 test_global_env:
   img: alpine
   env: IS_SET
@@ -18,7 +19,7 @@ use_output_from_prior_stage:
   run: echo "$CREATE_FILE_OUTPUT" | grep "PASSED"
 can_get_more_code:
   img: bravissimolabs/alpine-git
-  run: git clone -b master --single-branch https://github.com/distributedlife/dockercise.git $OUT
+  run: git clone -b master --single-branch https://github.com/graphci/graphci.git $OUT
 use_volume_from_prior_stage:
   img: alpine
   vol: can_get_more_code
@@ -102,3 +103,4 @@ run_tests:
     - can_get_node_modules_from_operated_on_code
     - supports_scoping_down_to_a_subfolder
     - code_is_a_magic_volume_of_the_folder_you_execute_dockercise_from
+    - test_dep_on_subgraph_node
