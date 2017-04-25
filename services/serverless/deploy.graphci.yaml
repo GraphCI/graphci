@@ -1,0 +1,37 @@
+meta:
+  subgraphs:
+    - graphci/aws-assume-role:latest
+create_deploy_bucket:
+  img: elimydlarz/docker-aws-cli:1.11.56
+  env:
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+    - aws_default_region
+    - deploy_staging_bucket
+  run: aws s3 mb s3://$DEPLOY_STAGING_BUCKET
+  neverFail: true
+npm_install:
+  img: mhart/alpine-node
+  on: code
+  run: npm install --production
+create_package:
+  after:
+    - create_deploy_bucket
+  img: elimydlarz/docker-aws-cli:1.11.56
+  env:
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+    - deploy_staging_bucket
+  vol: npm_install
+  run: aws cloudformation package --template-file npm_install/graphci.input.yaml --s3-bucket $DEPLOY_STAGING_BUCKET --output-template-file $OUT/output.yaml
+deploy:
+  img: elimydlarz/docker-aws-cli:1.11.56
+  env:
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+    - aws_default_region
+  vol: create_package
+  run: aws cloudformation deploy --template-file create_package/output.yaml --capabilities CAPABILITY_IAM --stack-name graphci
