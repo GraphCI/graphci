@@ -1,10 +1,13 @@
-const dependencyTypes = ['after', 'img', 'run', 'vol', 'env', 'done'];
+const dependencyTypes = ['after', 'run', 'vol', 'env', 'done'];
 
 const array = (x = []) => (Array.isArray(x) ? x : [x]);
 
 const getDependencies = (targetStage) =>
-  dependencyTypes.reduce((dependencies, dependencyType) =>
-    dependencies.concat(array(targetStage[dependencyType])), []);
+  dependencyTypes.reduce(
+    (dependencies, dependencyType) =>
+      dependencies.concat(array(targetStage[dependencyType])),
+    []
+  );
 
 const hasNoRealEdges = (edges, stage) => edges.every(([x, y]) => x !== stage && y !== stage);
 
@@ -30,14 +33,9 @@ const buildEdges = (stages, [target, ...targets], edges = []) => {
   return edges;
 };
 
-const buildStages = (stages) =>
-  Object.keys(stages).map((name) => ({
-    name,
-  }));
-
-const build = (stages, targets) => ({
-  edges: buildEdges(stages, targets),
-  stages: buildStages(stages),
+const buildDag = ({ input, targets }) => ({
+  input,
+  edges: buildEdges(input, targets),
 });
 
-module.exports = build;
+module.exports = buildDag;

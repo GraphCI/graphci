@@ -26,7 +26,14 @@
     "class-methods-use-this": ["off"],
     "no-underscore-dangle": ["off"],
     "no-console": ["off"],
-    "no-var": ["off"]
+    "no-var": ["off"],
+    "comma-dangle": ["error", {
+      "functions": "never",
+      "arrays": "always-multiline",
+      "objects": "always-multiline",
+      "imports": "always-multiline",
+      "exports": "always-multiline"
+    }]
   },
   "parserOptions": {
     "ecmaFeatures": {

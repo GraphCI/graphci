@@ -10,7 +10,8 @@
     "test:watch": "mocha **/*.spec.js --watch"
   },
   "bin": {
-    "graphci": "index.js"
+    "graphci": "index.js",
+    "graph-ci-server": "src/server/app.js"
   },
   "files": [
     "index.js",
