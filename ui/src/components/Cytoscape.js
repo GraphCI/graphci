@@ -67,7 +67,7 @@ class Cytoscape extends Component {
       });
     }
 
-    this.cy.minZoom(this.cy.zoom());
+    this.cy.minZoom(this.cy.zoom() - 0.5);
     this.cy.maxZoom(this.cy.zoom() + 1);
   }
 
