@@ -6,6 +6,7 @@ import uniq from 'lodash/uniq';
 import axios from 'axios';
 import moment from 'moment';
 import reactAnsiStyle from 'react-ansi-style';
+import Spinner from 'react-spinkit';
 import Cytoscape from './Cytoscape';
 import { nodeLogUrl } from '../endpoints';
 
@@ -51,19 +52,33 @@ const logs = {
   paddingBottom: 20,
 };
 
+const spinnerPosition = {
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+};
+
 class NodeLogViewer extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = { content: { logs: ['loading'] } };
+    this.state = {
+      loading: true,
+      content: { logs: [] },
+    };
 
     axios(nodeLogUrl(props.runId, props.node))
       .then((response) => response.data)
       .then((info) => {
-        this.setState({ content: {
-          ...info,
-          logs: info.logs.trim().split(/[\r\n]+/),
-        } });
+        this.setState({
+          loading: false,
+          content: {
+            ...info,
+            logs: info.logs.trim().split(/[\r\n]+/),
+          },
+        });
       })
       .catch((e) => this.setState({ content: [e.message] }));
   }
@@ -80,19 +95,24 @@ class NodeLogViewer extends React.Component {
         ariaHideApp={true}
         onRequestClose={onClose}
       >
-        <div style={modalContent}>
-          <div style={header}>{name}</div>
-          <div style={duration}>{moment(finished).from(started, true)}</div>
-          <div style={logs}>
-          {
-            this.state.content.logs.map((line, i) => (
-              <p key={i} style={textStyle}>
-              {reactAnsiStyle(React, line)}
-              </p>
-            ))
-          }
+        {
+          this.state.loading
+          ? <Spinner style={spinnerPosition} spinnerName="three-bounce" />
+          : <div style={modalContent}>
+              <div style={header}>{name}</div>
+              <div style={duration}>Elapsed time: {moment(finished).from(started, true)}</div>
+              <div style={logs}>
+                <p><b>Logs</b></p>
+              {
+                this.state.content.logs.map((line, i) => (
+                  <p key={i} style={textStyle}>
+                  {reactAnsiStyle(React, line)}
+                  </p>
+                ))
+              }
+              </div>
           </div>
-        </div>
+        }
       </ReactModal>
     );
   }
