@@ -15,7 +15,7 @@ const push = {
 describe('server runGraph', () => {
   context('optimistically', () => {
     it('builds input and dag', () =>
-      runGraph('test-repository', push).then(({ input, edges }) => {
+      runGraph('../test-data/test-repository', push).then(({ input, edges }) => {
         expect(input).to.eql({
           a: { img: 'example' },
           b: { img: 'example', after: ['a'] },

@@ -3,11 +3,11 @@ const glob = denodeify(require('glob'));
 const readFile = denodeify(require('fs').readFile);
 const yaml = require('js-yaml');
 
-const { base, collapseMeta } = require('../../src/meta');
-const fetchSubgraphs = require('../../src/subgraphs');
+const { base, collapseMeta } = require('./meta');
+const fetchSubgraphs = require('./subgraphs');
 
 const parseYaml = ({ path, push }) =>
-  glob(`src/server/${path}/**/*.dockercise.yaml`, { ignore: ['**/node_modules/**'] })
+  glob(`${path}/**/*.dockercise.yaml`, { ignore: ['**/node_modules/**'] })
     .then((files) => Promise.all(files.map((filename) => readFile(filename, 'utf8'))))
     .then((files) => files.map(yaml.safeLoad))
     .then(collapseMeta)

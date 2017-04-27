@@ -1,0 +1,53 @@
+{
+  "name": "graphci",
+  "version": "1.0.1",
+  "description": "Fan-in and fan-out CI pipelines using docker",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "IS_SET=YES node index.js run_tests",
+    "debug": "IS_SET=YES node index.js run_tests 1",
+    "test:unit": "mocha **/*.spec.js",
+    "test:watch": "mocha **/*.spec.js --watch"
+  },
+  "bin": {
+    "graphci": "cli/bin/index.js",
+    "graphci-server": "server/bin/index.js"
+  },
+  "files": [
+    "cli/",
+    "common/",
+    "server/",
+    "package.json"
+  ],
+  "repository": "https://github.com/graphci/graphci",
+  "author": "Ryan Boucher",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.28.0",
+    "body-parser": "^1.17.1",
+    "breeze-dag": "^0.1.0",
+    "colors": "^1.1.2",
+    "copy-dir": "^0.3.0",
+    "denodeify": "^1.2.1",
+    "dockerode": "^2.3.3",
+    "dockerode-promise": "^0.1.0",
+    "express": "^4.15.2",
+    "glob": "^7.1.1",
+    "js-yaml": "^3.8.2",
+    "lodash": "^4.17.4",
+    "moment": "^2.17.1",
+    "shelljs": "^0.7.7",
+    "uuid": "^3.0.1"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "eslint": "^3.17.1",
+    "eslint-config-airbnb": "^14.1.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^4.0.0",
+    "eslint-plugin-mocha": "^4.8.0",
+    "eslint-plugin-react": "^6.10.0",
+    "mocha": "^3.2.0"
+  }
+}
