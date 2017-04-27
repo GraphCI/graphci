@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
 
 const params = {
-  Bucket: 'graphci',
+  Bucket: process.env.BUCKET,
   Delimiter: '/',
   EncodingType: 'url',
   MaxKeys: 1000,

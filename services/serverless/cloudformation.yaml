@@ -1,5 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
+Parameters:
+  BUCKET:
+    Type: String
 Resources:
   ApiLambda:
     Type: AWS::Serverless::Function
@@ -10,6 +13,7 @@ Resources:
       Policies: AWSLambdaRole
       Environment:
         Variables:
+          BUCKET: !Ref BUCKET
           REGION: !Ref "AWS::Region"
       Events:
         ProxyApiGreedy:

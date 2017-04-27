@@ -25,7 +25,7 @@ create_package:
     - aws_session_token
     - deploy_staging_bucket
   vol: npm_install
-  run: aws cloudformation package --template-file npm_install/graphci.input.yaml --s3-bucket $DEPLOY_STAGING_BUCKET --output-template-file $OUT/output.yaml
+  run: aws cloudformation package --template-file npm_install/cloudformation.yaml --s3-bucket $DEPLOY_STAGING_BUCKET --output-template-file $OUT/cloudformation.yaml
 deploy:
   img: elimydlarz/docker-aws-cli:1.11.56
   env:
@@ -33,5 +33,6 @@ deploy:
     - aws_secret_access_key
     - aws_session_token
     - aws_default_region
+    - bucket
   vol: create_package
-  run: aws cloudformation deploy --template-file create_package/output.yaml --capabilities CAPABILITY_IAM --stack-name graphci
+  run: aws cloudformation deploy --template-file create_package/cloudformation.yaml --capabilities CAPABILITY_IAM --stack-name graphci --parameter-overrides BUCKET=${BUCKET}

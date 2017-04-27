@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
 
 const params = (runId) => ({
-  Bucket: 'graphci',
+  Bucket: process.env.BUCKET,
   Key: `${runId}/summary.json`,
 });
 
