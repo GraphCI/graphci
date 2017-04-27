@@ -1,11 +1,9 @@
-const dependencyTypes = ['after', 'run', 'vol', 'env', 'done'];
-
-const array = (x = []) => (Array.isArray(x) ? x : [x]);
+const dependencyTypes = ['after', 'vol', 'env', 'on'];
 
 const getDependencies = (targetStage) =>
   dependencyTypes.reduce(
     (dependencies, dependencyType) =>
-      dependencies.concat(array(targetStage[dependencyType])),
+      dependencies.concat(targetStage[dependencyType]),
     []
   );
 
@@ -33,9 +31,10 @@ const buildEdges = (stages, [target, ...targets], edges = []) => {
   return edges;
 };
 
-const buildDag = ({ input, targets }) => ({
-  input,
-  edges: buildEdges(input, targets),
+const buildDag = ({ stages, targets }) => ({
+  stages,
+  edges: buildEdges(stages, targets),
+  targets,
 });
 
 module.exports = buildDag;

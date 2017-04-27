@@ -8,7 +8,7 @@
     "test": "IS_SET=YES node index.js run_tests",
     "debug": "IS_SET=YES node index.js run_tests 1",
     "test:unit": "mocha **/*.spec.js",
-    "test:watch": "mocha **/*.spec.js --watch"
+    "test:unit:watch": "mocha **/*.spec.js --watch"
   },
   "bin": {
     "graphci": "cli/bin/index.js",

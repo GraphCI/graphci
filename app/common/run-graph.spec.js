@@ -12,7 +12,7 @@ const push = {
   ],
 };
 
-describe('server runGraph', () => {
+describe('runGraph', () => {
   context('optimistically', () => {
     it('builds input and dag', () =>
       runGraph('../test-data/test-repository', push).then(({ input, edges }) => {

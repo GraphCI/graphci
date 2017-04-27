@@ -4,7 +4,7 @@ const expect = require('chai').expect;
 
 const findTargets = require('./find-targets');
 
-describe('server findTargets', () => {
+describe('findTargets', () => {
   context('when things get tricky', () => {
     const input = {
       a: { triggers: [] },
