@@ -6,7 +6,7 @@ const cyStyle = {
   width: '100%',
   position: 'absolute',
   left: '0',
-  top: '0',
+  top: '64',
 };
 
 class Cytoscape extends Component {
@@ -66,6 +66,9 @@ class Cytoscape extends Component {
         setTimeout(() => this.props.onTap(node), 0);
       });
     }
+
+    this.cy.minZoom(this.cy.zoom());
+    this.cy.maxZoom(this.cy.zoom() + 1);
   }
 
   componentDidMount() {

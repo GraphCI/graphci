@@ -1,5 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import { Link } from 'react-router-dom';
 import ReactModal from 'react-modal';
 import uniq from 'lodash/uniq';
 import axios from 'axios';
@@ -119,6 +120,7 @@ class RunListView extends React.Component {
 
     return (
       <div>
+        <Link to={'/web/runs'} style={{ display: 'block' }}>Back to run list</Link>
         <Cytoscape elements={{ nodes, edges }} onTap={this.showModal.bind(this)} />
         {
           nodez.map((node) => (
