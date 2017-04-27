@@ -22,6 +22,7 @@ describe('server runGraph', () => {
           c: { img: 'example', after: ['b'], triggers: ['bolognese.md'] },
           d: { img: 'example', triggers: ['carbonara.md', 'bolognese.md'] },
           e: { img: 'example' },
+          meta: {},
         });
         expect(edges).to.eql([
           ['b', 'c'],
