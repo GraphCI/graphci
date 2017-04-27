@@ -84,6 +84,10 @@ can_get_node_modules_from_operated_on_code:
   vol: can_operate_on_code
   dir: /can_operate_on_code
   run: if [ -d node_modules ]; then echo "YES"; fi | grep "YES"
+☃:
+  img: alpine
+  env: IS_SET
+  run: echo "YES" | grep "YES"
 run_tests:
   after:
     - test_global_env
@@ -104,3 +108,4 @@ run_tests:
     - supports_scoping_down_to_a_subfolder
     - code_is_a_magic_volume_of_the_folder_you_execute_graphci_from
     - test_dep_on_subgraph_node
+    - ☃
