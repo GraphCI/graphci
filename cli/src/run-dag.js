@@ -14,7 +14,7 @@ const colors = require('colors/safe');
 
 const mkdir = denodeify(fs.mkdir);
 const readFile = denodeify(fs.readFile);
-const copydir = denodeify(require('copy-dir'));
+const { copy } = require('fs-extra');
 
 const concurrency = 10;
 const SUCCESS = 0;
@@ -59,7 +59,7 @@ const runDag = ({ stages, edges }, debug, tags) => {
       console.info(`Copying from "${outputOfPriorStage}" to "${defaultStageOutput}"`);
     }
 
-    return copydir(outputOfPriorStage, defaultStageOutput)
+    return copy(outputOfPriorStage, defaultStageOutput)
       .then(() => `${defaultStageOutput}:/${stageName}`)
       .catch((err) => console.error(colors.red(err)));
   };
