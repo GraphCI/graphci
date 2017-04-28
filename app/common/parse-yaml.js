@@ -7,7 +7,7 @@ const { base, collapseMeta } = require('./meta');
 const fetchSubgraphs = require('./subgraphs');
 
 const parseYaml = ({ path, push }) =>
-  glob(`${path}/**/*.dockercise.yaml`, { ignore: ['**/node_modules/**'] })
+  glob(`${path}/**/*.graphci.yaml`, { ignore: ['**/node_modules/**'] })
     .then((files) => Promise.all(files.map((filename) => readFile(filename, 'utf8'))))
     .then((files) => files.map(yaml.safeLoad))
     .then(collapseMeta)

@@ -6,11 +6,13 @@ const getTargetsFromTriggers = (stages, push) => {
   const changes = union(...push.commits.map(({ added, removed, modified }) =>
     union(added, removed, modified)));
 
-  return changes.reduce((acc, change) =>
+  const targets = changes.reduce((acc, change) =>
     union(acc, Object.keys(stages).filter((key) =>
       node(stages[key] || {}).triggers.includes(change))),
     []
   );
+
+  return targets;
 };
 
 const findTargets = ({ stages, push }, targets) => ({

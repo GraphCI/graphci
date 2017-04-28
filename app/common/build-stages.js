@@ -1,19 +1,27 @@
 const array = (x = []) => (Array.isArray(x) ? x : [x]);
 
-const buildStage = ({ name, env, vol, after, outVol, targets }) => ({
-  name,
-  NAME: name.toUpperCase(),
-  result: 'unknown',
-  on: array(env),
-  env: array(env),
-  vol: array(vol),
-  after: array(after),
-  targets: array(targets),
-  outVol: array(outVol),
+const buildStage = (key, { env, on, vol, after, outVol, targets, triggers, img, run }) => ({
+  [key]: {
+    name: key,
+    NAME: key.toUpperCase(),
+    result: 'unknown',
+    img,
+    run,
+    on: array(on),
+    env: array(env),
+    vol: array(vol),
+    after: array(after),
+    targets: array(targets),
+    outVol: array(outVol),
+    triggers: array(triggers),
+  },
 });
 
 const buildStages = ({ input, push }) => ({
-  stages: input.map(buildStage),
+  stages: Object.keys(input).reduce(
+    (stages, key) => Object.assign(stages, buildStage(key, input[key])),
+    {}
+  ),
   push,
 });
 

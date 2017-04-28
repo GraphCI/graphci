@@ -131,6 +131,8 @@ const runDag = ({ stages, edges }, debug, tags) => {
     const NAME = name.toUpperCase();
     const stage = stages[name];
 
+    console.info('Stage: ', stage);
+
     const results = (success = true) => ({
       runId,
       name,
