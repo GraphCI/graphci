@@ -1,119 +1,154 @@
 # GraphCI
 
-Reinventing CI using docker.
+The docker-first and docker-last graph based CI system with package support.
 
-Take a look at the yaml file below. Define each of your stages, **GraphCI** will build a DAG of each of your stages and run them in order. In the example the `assume-role` stage runs and collects one-time AWS credentials. The next three stages are dependent on `assume-role` and cat the output, plucking out particular values. Later the `create-stack` value will take the outputs of the `aws_access_key_id`, `aws_secret_access_key` and `aws_session_token` stages, put them into environment variables passed into the docker stage. The `create-stack` stage also relies on the `get-code` output as a volume.
+Given a graph definition **GraphCI** will find the path to your desired nodes and then run each of the required stages, in parallel when possible and in sequence when required.
+
+
+# Installation
+`npm i graphci -g`
+
 
 # Usage
-`AWS_PROFILE=has-permissions-to-s3 npm start`
+`graphci node_you_want_built`
 
-# CI Definition
+GraphCI will look in all subfolders (except node_modules) looking for `*.graphci.yaml` files. It then loads the files into a giant graph. The graph expands through subgraphs.
+
+An `example.graphci.yaml` is:
 
 ```yaml
-assume-role:
-  img: pebbletech/docker-aws-cli
-  run: aws sts assume-role --role-arn arn:aws:iam::327070154264:role/AssumeThis --role-session-name deploy
-aws_access_key_id:
-  after: assume-role
-  img: pebbletech/docker-aws-cli
-  run: cat out/assume-role | jq -r .Credentials.AccessKeyId
-aws_secret_access_key:
-  after: assume-role
-  img: pebbletech/docker-aws-cli
-  run: cat out/assume-role | jq -r .Credentials.SecretAccessKey
-aws_session_token:
-  after: assume-role
-  img: pebbletech/docker-aws-cli
-  run: cat out/assume-role | jq -r .Credentials.SessionToken
-get-code:
-  img: bravissimolabs/alpine-git
-  run: git clone -b master --single-branch https://github.com/distributedlife/graphci.git get-code
-create-stack:
-  img: pebbletech/docker-aws-cli
+meta:
+  subgraphs:
+    - graphci/aws-assume-role:latest
+node1:
+  img: alpine
+  run: ls -la
+node2:
+  after: node1
+  img: alpine
+  run: echo "GraphCI"
+```
+
+The meta node lets you define extra subgraphs. GraphCI fetches these before any part of the graph runs. Subgraphs may contain further subgraphs. All are loaded before the graph is fun.
+
+
+# Node Definition
+A GraphCI node requires only three things, a name, a docker image and a command to run.
+
+```yaml
+node_name:
+  img: alpine
+  run: echo "Hello"
+```
+
+## Environment Variables
+A node can use the console output of a previous node as an environment variable:
+
+```yaml
+relies_on_node_name:
+  env: node_name
+  img: alpine
+  run: cat $NODE_NAME | grep "Hello"
+```
+
+The `relies_on_node_name` node will run after `node_name` has completed. By making a relationship we've created an execution order. GraphCI handles this for you.
+
+And the run will pass or fail depending on whether $NODE_NAME contains hello because grep returns a non-zero return code when no matches are found.
+
+You can also include multiple environment variables and those that are defined outside the process.
+
+```yaml
+relies_on_node_name:
+  env:
+    - node_name
+    - home
+  img: alpine
+  run: echo $HOME
+```
+
+## Volumes
+Each node gets it's own volume mounted for storing output that isn't console output. You can use the `$OUT` environment variables. Other nodes can mount that volume and use it. These volumes mount as read-only.
+
+```yaml
+has_a_volume:
+  img: alpine
+  run: echo "Content" > $OUT/a_file
+needs_a_volume:
+  img: alpine
+  vol: has_a_volume
+  run: echo has_a_volume/a_file | grep "Content"
+```
+
+You can set a working directory if required. So to rewrite the subgraph above.
+
+```yaml
+has_a_volume:
+  img: alpine
+  run: echo "Content" > $OUT/a_file
+needs_a_volume:
+  img: alpine
+  vol: has_a_volume
+  dir: /has_a_volume
+  run: echo a_file | grep "Content"
+```
+
+Or, if you want write access, you can operate `on` a volume. Node outputs are immutable so you will get a copy of the output the working volume of the current node. Using the `on` attribute will also set the working dir to the working volume.
+
+```yaml
+has_a_volume:
+  img: alpine
+  run: echo "Content" > $OUT/a_file
+needs_a_volume:
+  img: alpine
+  on: has_a_volume
+  run: echo a_file | grep "Content"
+```
+
+You can mount mulitple volumes. The `on` and `dir` attributes do not support more than one entry.
+
+```yaml
+has_multiple_volumes:
+  vol:
+    - node1
+    - node2
+  img: alpine
+  run: ls -la /node1 && ls -la node2
+```
+
+## Explicit dependencies
+If you require a node to run after another run is complete, but they share no information. Then you can use the `after` tag.
+
+```yaml
+node_name:
+  after:
+    - other_node
+    - prior_node
+  img: alpine
+  run: echo "Waiting..."
+```
+
+## Sensitive logs
+You can hide logs for a stage by setting the `noLog` attribute to true. No logs will be printed to the console or will be uploaded to S3. The output of that stage will be made available for the duration of the run.
+
+```yaml
+has_sensitive_logs:
+  img: alpine
+  run: echo "Will not be seen"
+  noLog: true
+```
+
+## Forcing Success
+Some stages, like creating an S3 bucket will fail if you already own the bucket. Which is technically correct, but no useful because the intent that you have a bucket has been achieved. You can force build stages to pass by using the `neverFail` tag.
+
+```yaml
+create_deploy_bucket:
+  img: elimydlarz/docker-aws-cli:1.11.56
   env:
     - aws_access_key_id
     - aws_secret_access_key
     - aws_session_token
-    - AWS_DEFAULT_REGION
-  vol: get-code
-  run: aws cloudformation create-stack --stack-name infra --template-body file://get-code/example.yaml
-wait-for-success:
-  after: create-stack
-  img: pebbletech/docker-aws-cli
-  env:
-    - aws_access_key_id
-    - aws_secret_access_key
-    - aws_session_token
-    - AWS_DEFAULT_REGION
-  run: aws cloudformation wait stack-create-complete --stack-name infra
-```
-
-# How do I...?
-## Publish a package to npm and then end of a
-
-# To do
-- [ ] Fail the build when environment variables are missing
-- [ ] Make sure that envvars with spaces work
-- [ ] Bug: GraphCI should be able to pull images the host does not already have
-- [ ] Implicit dag creation (run)
-- [ ] Implicit dag creation (img)
-- [ ] Zip up out and move to s3 bucket for run
-- [ ] Handle errors from docker containers as promise rejections
-- [ ] Handle nothing to do when there is no config
-- [ ] Support for encrypted environment variables
-- [ ] Support packages using Dockerfiles
-- [ ] Add support for clean up stages. If other stage finishes (not just passes) then run my stage
-- [ ] Conditional Logic. If stage is true run update, if stage is false, run create.
-- [ ] Dependencies on remote pipelines. When this build goes green _after_ my build has started, then this dependency is fulfulled.
-- [ ] Make a docker container that comes with GraphCI installed already
-- [ ] Command completion
-
-
-# Triggers
-- [ ] Remote build completes (we need some way of tracking whether or not we have build of this before
-- [ ] Timer. When we do a get on a package and it's version number has changed, then we run a stage that updates that dependency and runs the build.
-
-# Results
-
-graphci/run/:runId/:stage.json ()
-graphci/run/:runId/:stage.log (for console out)
-graphci/run/:runId/:stage.zip (for volumes)
-
-```javascript
-POST graphci/run/:runId/:stage.json
-{
-  name: prior.name,
-  started: prior.started,
-  finished: moment().utc(),
-  status: 'winning|like-a-chump',
-  logs: graphci/run/:runId/:stage.log,
-  artefact: graphci/run/:runId/:stage.zip,
-}
-```
-
-
-How it could work:
-
-# Self-Hosted as a Service
-1. Set up assume role that graphci can assume
-2. Trigger deployment on graphci.com. It sets up GraphCI in your account.
-3. Start pushing commits
-
-
-# Results
-https://graphci.com/results/aws-account-id/name-of-pipeline/# -> redirects to:
-https://graphci-AWS-Account-Id.s3-website-ap-southeast-2.amazonaws.com/results/aws-account-id/name-of-pipeline/#
-
-This 404's and redirects to our S3 bucket where we return an index.html that is our react app. We then use the route to make a request to our backend server that goes and gets the results file from your AWS account (we have permission to read).
-
-We update the store with the json we receive and render the results.
-
-
-# Deployment
-## UI
-```bash
-DEPLOY_STAGING_BUCKET=graphci-lambdas-deploy \
-AWS_DEFAULT_REGION=ap-southeast-2 \
-ROLE_TO_ASSUME=arn:aws:iam::*:role/AssumeThis \
-npm run deploy
+    - aws_default_region
+    - deploy_staging_bucket
+  run: aws s3 mb s3://$DEPLOY_STAGING_BUCKET
+  neverFail: true
 ```
