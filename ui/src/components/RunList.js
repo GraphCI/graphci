@@ -12,7 +12,7 @@ const RunOverview = ({ run }) => (
     <div style={runStyle}>
       <span>{moment(run).fromNow()}</span>
       <span> RunId: {run}</span>
-      <span> Date: {moment(run).format('dddd DD of MMMM, YYYY  @ HH:MM (Z)')}</span>
+      <span> Date: {moment(run).format('dddd DD of MMMM, YYYY  @ HH:mm (Z)')}</span>
     </div>
   </Link>
 );
