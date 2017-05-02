@@ -12,6 +12,8 @@ const uniq = require('lodash/uniq');
 const clone = require('lodash/cloneDeep');
 const colors = require('colors/safe');
 const pullImage = require('./pull-image');
+const getOptions = require('./cli-options');
+const debug = require('./logging').debug;
 
 const mkdir = denodeify(fs.mkdir);
 const readFile = denodeify(fs.readFile);
@@ -27,7 +29,7 @@ const nothingToDo = (stage) => !stage || !stage.img;
 const isStagePluckGlobalEnvVar = (name) => process.env[name];
 const formatEnvVar = (KEY, val) => `${KEY}=${val}`;
 
-const runDag = ({ stages, edges }, debug, tags) => {
+const runDag = ({ stages, edges }, tags) => {
   console.info('Running the graph');
 
   const runId = moment().valueOf();
@@ -56,9 +58,7 @@ const runDag = ({ stages, edges }, debug, tags) => {
       outputOfPriorStage = process.cwd();
     }
 
-    if (debug) {
-      console.info(`Copying from "${outputOfPriorStage}" to "${defaultStageOutput}"`);
-    }
+    debug(`Copying from "${outputOfPriorStage}" to "${defaultStageOutput}"`);
 
     return copy(outputOfPriorStage, defaultStageOutput)
       .then(() => `${defaultStageOutput}:/${stageName}`)
@@ -71,7 +71,7 @@ const runDag = ({ stages, edges }, debug, tags) => {
     const runStream = stream.PassThrough();
     runStream.pipe(fs.createWriteStream(getStageOutputPath(name)));
 
-    if (noLog) {
+    if (noLog || getOptions().quiet) {
       return runStream;
     }
 
@@ -88,7 +88,9 @@ const runDag = ({ stages, edges }, debug, tags) => {
     const code = volumes.filter(isCode);
     const operatesOn = [stage.on].filter((x) => x);
 
-    const upstreamPromises = upstream.map((vol) => (asPromise(buildVolumeMapping(vol, stage.name))));
+    const upstreamPromises = upstream.map(
+      (vol) => (asPromise(buildVolumeMapping(vol, stage.name)))
+    );
     const operatesOnPromises = operatesOn.map((vol) => buildOperatesOnMapping(vol, stage.name));
     const codePromises = code.map(() => asPromise(`${process.cwd()}:/code:ro`));
 
@@ -146,13 +148,11 @@ const runDag = ({ stages, edges }, debug, tags) => {
       const WorkingDir = stage.on ? `/${stage.name}` : stage.dir;
 
       return BindsPromise.then((Binds) => {
-        if (debug) {
-          console.info('stage', stage);
-          console.info('Binds', Binds);
-          console.info('Env', Env);
-          console.info('cmd', cmd);
-          console.info('WorkingDir', WorkingDir);
-        }
+        debug('stage', stage);
+        debug('Binds', Binds);
+        debug('Env', Env);
+        debug('cmd', cmd);
+        debug('WorkingDir', WorkingDir);
 
         return docker.run(stage.img, cmd, forkOutputStream(name, stage.noLog), {
           Binds,

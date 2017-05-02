@@ -1,4 +1,5 @@
 const startDocker = require('./docker');
+const debug = require('./logging').debug;
 
 const docker = startDocker();
 const imagePullCache = {};
@@ -19,7 +20,7 @@ const pullImage = (image) => {
       };
 
       const onProgress = (event) => {
-        // console.log(`${image} pulling progress: ${event.status}`);
+        debug(`${image} docker pull progress: ${event.status}`);
       };
 
       docker.pull(image, (error, stream) => {

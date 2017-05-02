@@ -9,9 +9,9 @@ const buildDag = require('./src/build-dag');
 const runDag = require('./src/run-dag');
 const { base, collapseMeta } = require('./src/meta');
 const fetchSubgraphs = require('./src/subgraphs');
+const getOptions = require('./src/cli-options');
 
-const target = process.argv[2];
-const debug = process.argv[3];
+const target = getOptions().args[0];
 
 glob('**/*.graphci.yaml', { ignore: ['**/node_modules/**'] })
   .then((files) => Promise.all(files.map((filename) => readFile(filename, 'utf8'))))
@@ -20,7 +20,7 @@ glob('**/*.graphci.yaml', { ignore: ['**/node_modules/**'] })
   .then(fetchSubgraphs)
   .then((files) => files.reduce((all, file) => Object.assign(base, all, file)), {})
   .then((stages) => buildDag(stages, target))
-  .then((dag) => runDag(dag, debug, [target]))
+  .then((dag) => runDag(dag, target))
   .then(([runId, result]) => {
     console.log(colors.green(`Run successful: ${runId}`));
     process.exit(result);

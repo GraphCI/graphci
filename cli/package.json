@@ -6,7 +6,6 @@
   "scripts": {
     "start": "node index.js",
     "test": "IS_SET=YES node index.js run_tests",
-    "debug": "IS_SET=YES node index.js run_tests 1",
     "test:watch": "mocha **/*.spec.js --watch"
   },
   "bin": {
@@ -25,6 +24,7 @@
     "body-parser": "^1.17.1",
     "breeze-dag": "^0.1.0",
     "colors": "^1.1.2",
+    "commander": "^2.9.0",
     "denodeify": "^1.2.1",
     "dockerode": "^2.3.3",
     "dockerode-promise": "^0.1.0",
