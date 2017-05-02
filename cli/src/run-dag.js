@@ -11,6 +11,7 @@ const uploadLogs = require('./s3').uploadLogs;
 const uniq = require('lodash/uniq');
 const clone = require('lodash/cloneDeep');
 const colors = require('colors/safe');
+const pullImage = require('./pull-image');
 
 const mkdir = denodeify(fs.mkdir);
 const readFile = denodeify(fs.readFile);
@@ -166,6 +167,10 @@ const runDag = ({ stages, edges }, debug, tags) => {
 
       return new Promise((resolve, reject) => {
         container.inspect((err, data) => {
+          if (err) {
+            reject(err);
+          }
+
           if (data.State.ExitCode === FAILURE && !stage.neverFail) {
             reject(data.State.ExitCode);
           }
@@ -213,9 +218,7 @@ const runDag = ({ stages, edges }, debug, tags) => {
         .then(() => next());
     }
 
-    const pull = docker.pull(stage.img);
-
-    return pull
+    return pullImage(stage.img)
       .then(() => Promise.all(getEnvironmentVariablesForStage(stage)))
       .then(doDockerRun)
       .then(findOutResultOfDockerRun)

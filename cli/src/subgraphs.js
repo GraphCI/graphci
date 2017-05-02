@@ -2,6 +2,7 @@ const yaml = require('js-yaml');
 const uniq = require('lodash/uniq');
 const stream = require('stream');
 const startDocker = require('./docker');
+const pullImage = require('./pull-image');
 
 const docker = startDocker();
 
@@ -30,7 +31,7 @@ const fetchSubgraphs = (files = []) => {
 
     const [dockerOutputStream, getSubgraph] = makeStream();
 
-    return docker.pull(subgraph)
+    return pullImage(subgraph)
       .then(() => docker.run(subgraph, [], dockerOutputStream))
       .then(getSubgraph)
       .then(yaml.safeLoad);
