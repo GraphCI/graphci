@@ -1,0 +1,46 @@
+meta:
+  subgraphs:
+    - graphci/aws-assume-role:latest
+name:
+  env: prefix
+  img: alpine
+  run: echo "${PREFIX}-graphci-web"
+npm_install:
+  img: node:alpine
+  on: code
+  run: npm install
+test:
+  img: node:alpine
+  on: npm_install
+  run: CI=1 npm test
+build:
+  after: test
+  img: node:alpine
+  on: npm_install
+  run: npm run build
+deploy:
+  env:
+    - prefix
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+  img: schickling/s3cmd
+  on: build
+  run: sync --delete-removed -P -r --delete-after build/ s3://$NAME
+web_rest_api_id:
+  env:
+    - web_rest_api_id
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+  img: elimydlarz/docker-aws-cli:1.11.56
+  run: aws apigateway get-rest-apis | jq -r '.items | map(select(.name == \"${NAME}\")) | .[].id'"))
+flush_web_gateway_cache:
+  after: deploy
+  env:
+    - web_rest_api_id
+    - aws_access_key_id
+    - aws_secret_access_key
+    - aws_session_token
+  img: elimydlarz/docker-aws-cli:1.11.56
+  run: aws apigateway flush-stage-cache --rest-api-id ${WEB_REST_API_ID} --stage-name web

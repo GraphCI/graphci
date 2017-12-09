@@ -1,0 +1,33 @@
+generate-npmrc:
+  img: alpine
+  env: NPM_TOKEN
+  run: echo //registry.npmjs.org/:_authToken=$NPM_TOKEN
+place-npmrc:
+  after: generate-npmrc
+  img: alpine
+  run: cp out/generate-npmrc ~/.npmrc
+patch-release:
+  after: place-npmrc
+  img: node:alpine
+  run: ls -la ~/
+minor-release:
+  after: generate-npmrc
+  img: node:alpine
+  run: npm version minor
+breaking-change:
+  after: generate-npmrc
+  img: node:alpine
+  run: npm version major
+fetch-source:
+  img: bravissimolabs/alpine-git
+  run: git clone -b master --single-branch https://github.com/distributedlife/graphci.git fetch-source
+npm-publish:
+  after: any-version-bump
+  img: node:alpine
+  vol: fetch-source
+  run: npm publish
+push-tags:
+  after: npm-publish
+  img: bravissimolabs/alpine-git
+  vol: fetch-source
+  run: git push --tags
